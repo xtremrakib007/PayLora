@@ -30,7 +30,7 @@ export function Layout() {
   return (
     <div className={'shell' + (open ? ' nav-open' : '')}>
       <aside className="side">
-        <div className="brand"><div className="logo"><Icon name="check" size={18} color="#fff" /></div>Workwise HR</div>
+        <div className="brand"><div className="logo"><Icon name="check" size={18} color="#fff" /></div>PayLora</div>
         {me && me.memberships.length > 1 && (
           <select className="cosel" value={me.company?.id} onChange={(e) => switchCompany(e.target.value)}>
             {me.memberships.map((m) => <option key={m.companyId} value={m.companyId}>{m.name}</option>)}

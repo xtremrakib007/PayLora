@@ -25,7 +25,7 @@ export default function Login() {
         <ScrollView contentContainerStyle={{ padding: 20, gap: 18, flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
           <View style={{ alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: C.brand, alignItems: 'center', justifyContent: 'center' }}><Icon name="hand-wave" size={32} color="#fff" /></View>
-            <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800' }}>Workwise HR</Text>
+            <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800' }}>PayLora</Text>
             <Text style={{ color: '#a9cfc5', textAlign: 'center' }}>Clock in, payslips, leave, tasks and meetings — in your pocket.</Text>
           </View>
           <Card style={{ gap: 14 }}>

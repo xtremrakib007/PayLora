@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Sharing from 'expo-sharing';
 
 export const API_URL: string = ((Constants.expoConfig?.extra as any)?.apiUrl || 'http://10.0.2.2:3000').replace(/\/$/, '');
-const KEY = 'ww_token';
+const KEY = 'paylora_token';
 let token: string | null = null;
 
 export const tokenStore = {

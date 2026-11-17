@@ -1,4 +1,4 @@
-# Workwise HR — multi-tenant HR & Payroll SaaS
+# PayLora — multi-tenant HR & Payroll SaaS
 
 A complete HR platform for many companies at once: **web app** for HR/admins and staff, an **Android app** for employees, and a **NestJS API** with strict tenant isolation, roles and subscription plans.
 

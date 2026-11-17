@@ -6,26 +6,26 @@ import type { ExpoConfig } from 'expo/config';
  *   EAS_PROJECT_ID       — from `eas init` (needed for push notifications)
  */
 const config: ExpoConfig = {
-  name: 'Workwise HR',
-  slug: 'workwise-hr',
-  scheme: 'workwise',
+  name: 'PayLora',
+  slug: 'paylora',
+  scheme: 'paylora',
   version: '1.0.0',
   orientation: 'portrait',
   userInterfaceStyle: 'light',
   icon: './assets/icon.png',
 
   android: {
-    package: process.env.ANDROID_PACKAGE || 'com.workwise.hr',
+    package: process.env.ANDROID_PACKAGE || 'com.paylora.app',
     versionCode: 1,
     adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#0d6b5c' },
     permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'POST_NOTIFICATIONS'],
   },
-  ios: { bundleIdentifier: 'com.workwise.hr', supportsTablet: false },
+  ios: { bundleIdentifier: 'com.paylora.app', supportsTablet: false },
   plugins: [
     'expo-router',
     ['expo-splash-screen', { image: './assets/splash.png', imageWidth: 160, backgroundColor: '#10251f' }],
     'expo-secure-store',
-    ['expo-location', { locationWhenInUsePermission: 'Workwise uses your location to verify clock-in at your workplace.' }],
+    ['expo-location', { locationWhenInUsePermission: 'PayLora uses your location to verify clock-in at your workplace.' }],
     ['expo-notifications', { color: '#0d6b5c' }],
   ],
   experiments: { typedRoutes: false },

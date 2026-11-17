@@ -8,7 +8,7 @@ import { Field, Spinner } from '../components/ui';
 function Art() {
   return (
     <div className="art">
-      <div className="brand" style={{ padding: 0 }}>Workwise HR</div>
+      <div className="brand" style={{ padding: 0 }}>PayLora</div>
       <div>
         <h2>All of HR in one place: payroll, leave, attendance, hiring and more.</h2>
         <p>Run payroll with statutory deductions, approve leave and claims, schedule shifts and meetings — and give every employee a mobile app for clock-in, payslips and tasks.</p>

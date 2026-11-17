@@ -1,5 +1,5 @@
 const BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') + '/api';
-const KEY = 'ww.token';
+const KEY = 'paylora.token';
 
 export const tokenStore = {
   get: () => { try { return localStorage.getItem(KEY); } catch { return null; } },
