@@ -1,0 +1,32 @@
+# Local / single-server deployment: PostgreSQL + API + web.
+#   docker compose up -d --build
+#   docker compose exec api node dist/db/seed.js --demo     # optional demo data
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: hr
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hr-password-change-me}
+      POSTGRES_DB: hrsaas
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U hr -d hrsaas"], interval: 5s, retries: 10 }
+    restart: unless-stopped
+
+  api:
+    build: ./apps/api
+    env_file: ./apps/api/.env
+    environment:
+      DATABASE_URL: postgresql://hr:${DB_PASSWORD:-hr-password-change-me}@db:5432/hrsaas
+      PORT: 3000
+    depends_on: { db: { condition: service_healthy } }
+    ports: ["3000:3000"]
+    restart: unless-stopped
+
+  web:
+    build: { context: ./apps/web }
+    depends_on: [api]
+    ports: ["8080:80"]
+    restart: unless-stopped
+
+volumes:
+  pgdata:

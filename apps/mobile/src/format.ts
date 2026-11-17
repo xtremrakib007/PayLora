@@ -1,0 +1,21 @@
+let currency = 'RM';
+export const setCurrency = (c?: string | null) => { currency = c || 'RM'; };
+export const num = (n: unknown) => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const money = (n: unknown) => `${currency} ${num(n)}`;
+const pad = (n: number) => String(n).padStart(2, '0');
+export const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+export const thisMonth = () => today().slice(0, 7);
+export const addDays = (s: string, k: number) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + k); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+export const addMonths = (p: string, k: number) => { const d = new Date(+p.slice(0, 4), +p.slice(5, 7) - 1 + k, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+const asDate = (s: string) => new Date(s.length === 10 ? s + 'T00:00:00' : s);
+export const fmtDate = (s?: string | null) => (s ? asDate(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
+export const fmtShort = (s?: string | null) => (s ? asDate(s).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—');
+export const fmtTime = (s?: string | null) => (s ? new Date(s).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—');
+export const fmtDay = (s: string) => new Date(s).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+export const monthLabel = (p: string) => new Date(+p.slice(0, 4), +p.slice(5, 7) - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+export const titleCase = (s?: string | null) => (s || '').toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+export const initials = (n?: string | null) => (n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
+export const ago = (s: string) => {
+  const m = Math.round((Date.now() - new Date(s).getTime()) / 60000);
+  if (m < 1) return 'just now'; if (m < 60) return `${m}m`; const h = Math.round(m / 60); if (h < 24) return `${h}h`; const d = Math.round(h / 24); return d < 7 ? `${d}d` : fmtShort(s);
+};
