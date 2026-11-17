@@ -34,7 +34,7 @@ function MyAttendance() {
         <div className="row between">
           <div><div className="small" style={{ color: '#a9d3c7', fontWeight: 700 }}>TODAY · {fmtDate(today())}</div>
             <div style={{ fontSize: 26, fontWeight: 800 }}>{t?.clockIn ? (t.clockOut ? 'Done for today' : 'Clocked in') : 'Not clocked in'}</div>
-            <div style={{ color: '#cfe7e0' }}>{t?.clockIn ? `In ${fmtTime(t.clockIn)}${t.clockOut ? ` · Out ${fmtTime(t.clockOut)}` : ''}${t.lateMinutes ? ` · ${fmtMins(t.lateMinutes)} late` : t.late ? ' · late' : ''}${t.clockInLoc?.distance != null ? ` · ${t.clockInLoc.distance} m from office` : ''}` : 'Your location is attached when your browser allows it.'}</div></div>
+            <div style={{ color: '#cfe7e0' }}>{t?.clockIn ? `In ${fmtTime(t.clockIn)}${t.clockOut ? ` · Out ${fmtTime(t.clockOut)}` : ''}${t.lateMinutes ? ` · ${fmtMins(t.lateMinutes)} late` : t.late ? ' · late' : ''}${t.earlyMinutes ? ` · left ${fmtMins(t.earlyMinutes)} early` : ''}${t.clockInLoc?.distance != null ? ` · ${t.clockInLoc.distance} m from office` : ''}` : 'Your location is attached when your browser allows it.'}</div></div>
           {!t?.clockOut && <button className="btn" disabled={clock.busy} onClick={() => clock.run(t?.clockIn ? 'out' : 'in')}>{t?.clockIn ? 'Clock out' : 'Clock in'}</button>}
         </div>
       </div>
@@ -42,10 +42,10 @@ function MyAttendance() {
         <div className="hd"><h3>History</h3><input className="inp" type="month" value={period} onChange={(e) => e.target.value && setPeriod(e.target.value)} style={{ width: 'auto' }} /></div>
         {q.data?.summary && <div className="row" style={{ marginBottom: 12 }}>
           <span className="badge ok">Present {q.data.summary.present}</span><span className="badge bad">Absent {q.data.summary.absent}</span><span className="badge warn">Half {q.data.summary.half}</span>
-          <span className="badge info">Leave {q.data.summary.leave}</span><span className="badge warn">Late {q.data.summary.late}×{q.data.summary.lateMinutes ? ` · ${fmtMins(q.data.summary.lateMinutes)}` : ''}</span><span className="badge">OT {q.data.summary.otHours} h</span></div>}
+          <span className="badge info">Leave {q.data.summary.leave}</span><span className="badge warn">Late {q.data.summary.late}×{q.data.summary.lateMinutes ? ` · ${fmtMins(q.data.summary.lateMinutes)}` : ''}</span><span className="badge warn">Early leave {q.data.summary.early}×{q.data.summary.earlyMinutes ? ` · ${fmtMins(q.data.summary.earlyMinutes)}` : ''}</span><span className="badge">OT {q.data.summary.otHours} h</span></div>}
         {!q.data ? <Spinner /> : !q.data.records.length ? <Empty title="No records this month" /> : (
           <div className="tw"><table className="t"><thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th className="n">Hours</th><th className="n">OT</th></tr></thead>
-            <tbody>{q.data.records.map((r: any) => <tr key={r.id}><td>{fmtDate(r.date)}</td><td><Badge s={r.status} />{(r.late || r.lateMinutes > 0) && <span className="badge warn" style={{ marginLeft: 4 }}>{r.lateMinutes ? `${fmtMins(r.lateMinutes)} late` : 'Late'}{r.lateWaived ? ' · excused' : ''}</span>}</td>
+            <tbody>{q.data.records.map((r: any) => <tr key={r.id}><td>{fmtDate(r.date)}</td><td><Badge s={r.status} />{(r.late || r.lateMinutes > 0) && <span className="badge warn" style={{ marginLeft: 4 }}>{r.lateMinutes ? `${fmtMins(r.lateMinutes)} late` : 'Late'}{r.lateWaived ? ' · excused' : ''}</span>}{r.earlyMinutes > 0 && <span className="badge warn" style={{ marginLeft: 4 }}>left {fmtMins(r.earlyMinutes)} early{r.earlyWaived ? ' · excused' : ''}</span>}</td>
               <td>{fmtTime(r.clockIn)}</td><td>{fmtTime(r.clockOut)}</td><td className="n">{r.clockIn && r.clockOut ? ((new Date(r.clockOut).getTime() - new Date(r.clockIn).getTime()) / 3600000).toFixed(1) : '—'}</td><td className="n">{Number(r.otHours) || '—'}</td></tr>)}</tbody></table></div>
         )}
       </div>
@@ -69,7 +69,7 @@ function DayRegister() {
         <span className="grow" /><button className="btn" onClick={all} disabled={!rows.length}>Mark remaining present</button>
       </div>
       {!q.data ? <Spinner /> : !rows.length ? <Empty title="No active employees" /> : (
-        <div className="tw"><table className="t"><thead><tr><th>Employee</th><th>Shift</th><th>Clock</th><th>Status</th><th className="n">Late (min)</th><th className="n">OT hours</th></tr></thead>
+        <div className="tw"><table className="t"><thead><tr><th>Employee</th><th>Shift</th><th>Clock</th><th>Status</th><th className="n">Late (min)</th><th className="n">Early leave (min)</th><th className="n">OT hours</th></tr></thead>
           <tbody>{rows.map((r: any) => {
             const cur = r.record?.status;
             return (
@@ -79,7 +79,8 @@ function DayRegister() {
                 <td className="small">{r.record?.clockIn ? `${fmtTime(r.record.clockIn)} – ${fmtTime(r.record.clockOut)}` : '—'}</td>
                 <td><div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>{MARKS.map(([v, l, c]) => (
                   <button key={v} className="btn sm" title={titleCase(v)} style={cur === v ? { background: c, borderColor: c, color: '#fff', width: 34 } : { width: 34 }} onClick={() => set(r.employee.id, cur === v ? null : v)}>{l}</button>))}</div></td>
-                <td className="n"><LateCell rec={r.record} onSave={(lateMinutes, lateWaived) => mark.run([{ employeeId: r.employee.id, status: cur ?? 'PRESENT', lateMinutes, lateWaived }])} /></td>
+                <td className="n"><MinutesCell mins={r.record?.lateMinutes} waived={r.record?.lateWaived} what="late" onSave={(lateMinutes, lateWaived) => mark.run([{ employeeId: r.employee.id, status: cur ?? 'PRESENT', lateMinutes, lateWaived }])} /></td>
+                <td className="n"><MinutesCell mins={r.record?.earlyMinutes} waived={r.record?.earlyWaived} what="early leave" onSave={(earlyMinutes, earlyWaived) => mark.run([{ employeeId: r.employee.id, status: cur ?? 'PRESENT', earlyMinutes, earlyWaived }])} /></td>
                 <td className="n"><input className="inp num" type="number" min="0" step="0.5" style={{ width: 80, textAlign: 'right' }} defaultValue={Number(r.record?.otHours) || ''} placeholder="0"
                   onBlur={(e) => { const v = Number(e.target.value) || 0; if (v !== (Number(r.record?.otHours) || 0)) set(r.employee.id, cur ?? null, v); }} /></td>
               </tr>);
@@ -89,12 +90,12 @@ function DayRegister() {
   );
 }
 
-/** Editable late minutes with an "excuse" toggle for the daily register. */
-function LateCell({ rec, onSave }: { rec: any; onSave: (minutes: number, waived: boolean) => void }) {
-  const mins = Number(rec?.lateMinutes) || 0, waived = !!rec?.lateWaived;
+/** Editable late / early-leave minutes with an "excuse" toggle for the daily register. */
+function MinutesCell({ mins: m, waived: w, what, onSave }: { mins?: number; waived?: boolean; what: string; onSave: (minutes: number, waived: boolean) => void }) {
+  const mins = Number(m) || 0, waived = !!w;
   return (
     <div className="row" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap', gap: 6 }}>
-      <input key={mins} className="inp num" type="number" min="0" step="1" defaultValue={mins || ''} placeholder="0" title="Minutes late"
+      <input key={mins} className="inp num" type="number" min="0" step="1" defaultValue={mins || ''} placeholder="0" title={`Minutes ${what}`}
         style={{ width: 70, textAlign: 'right', textDecoration: waived ? 'line-through' : undefined, borderColor: mins && !waived ? 'var(--warn)' : undefined }}
         onBlur={(e) => { const v = Math.max(0, Math.round(Number(e.target.value) || 0)); if (v !== mins) onSave(v, waived); }} />
       {mins > 0 && <button className="btn sm" title={waived ? 'Count this lateness again' : 'Excuse — no pay deduction'} onClick={() => onSave(mins, !waived)}>{waived ? 'Undo excuse' : 'Excuse'}</button>}
@@ -109,10 +110,10 @@ function MonthSummary() {
     <div className="card">
       <div className="tools"><input className="inp" type="month" value={period} onChange={(e) => e.target.value && setPeriod(e.target.value)} /></div>
       {!q.data ? <Spinner /> : (
-        <div className="tw"><table className="t"><thead><tr><th>Employee</th><th className="n">Present</th><th className="n">Absent</th><th className="n">Half</th><th className="n">Leave</th><th className="n">Late</th><th className="n">Late time</th><th className="n">OT h</th><th className="n">Unpaid leave</th><th className="n">Unpaid days</th></tr></thead>
-          <tbody>{q.data.map((r) => <tr key={r.employee.id}><td><Who name={r.employee.name} sub={r.employee.code} id={r.employee.id} /></td><td className="n">{r.present}</td><td className="n">{r.absent}</td><td className="n">{r.half}</td><td className="n">{r.leave}</td><td className="n">{r.late}</td><td className="n">{r.lateMinutes ? fmtMins(r.lateMinutes) : '—'}</td><td className="n">{r.otHours}</td><td className="n">{r.unpaidLeaveDays}</td><td className="n"><b>{r.unpaidDays}</b></td></tr>)}</tbody></table></div>
+        <div className="tw"><table className="t"><thead><tr><th>Employee</th><th className="n">Present</th><th className="n">Absent</th><th className="n">Half</th><th className="n">Leave</th><th className="n">Late</th><th className="n">Late time</th><th className="n">Early leave</th><th className="n">OT h</th><th className="n">Unpaid leave</th><th className="n">Unpaid days</th></tr></thead>
+          <tbody>{q.data.map((r) => <tr key={r.employee.id}><td><Who name={r.employee.name} sub={r.employee.code} id={r.employee.id} /></td><td className="n">{r.present}</td><td className="n">{r.absent}</td><td className="n">{r.half}</td><td className="n">{r.leave}</td><td className="n">{r.late}</td><td className="n">{r.lateMinutes ? fmtMins(r.lateMinutes) : '—'}</td><td className="n">{r.earlyMinutes ? fmtMins(r.earlyMinutes) : '—'}</td><td className="n">{r.otHours}</td><td className="n">{r.unpaidLeaveDays}</td><td className="n"><b>{r.unpaidDays}</b></td></tr>)}</tbody></table></div>
       )}
-      <p className="small muted">Unpaid days = absent + ½ × half days + approved unpaid leave. Late time excludes excused arrivals and is rounded per your settings. Payroll deducts both from basic salary (late time only when late deduction is on in Settings).</p>
+      <p className="small muted">Unpaid days = absent + ½ × half days + approved unpaid leave. Late and early-leave time exclude excused days and are rounded per your settings. Payroll deducts them from basic salary only when those deductions are switched on in Settings.</p>
     </div>
   );
 }

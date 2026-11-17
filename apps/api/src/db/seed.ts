@@ -44,7 +44,7 @@ async function demo(db: DB) {
   const owner = await mkUser('owner@demo.test', 'Aisyah Rahman');
   const co = await db.transaction((tx) => createCompany(tx as unknown as DB, owner.id, { name: 'Nusantara Trading Sdn. Bhd.', slug: 'demo' }));
   const cid = co.id;
-  await db.update(s.companies).set({ regNo: '202301012345 (1501234-X)', address: 'Level 8, Menara Example, Jalan Ampang, 50450 Kuala Lumpur', email: 'hr@nusantara.example', phone: '+60 3-2100 0000', officeLat: 3.1579, officeLng: 101.7123, lateDeduction: true, lateGraceMinutes: 10, lateRoundMinutes: 15 }).where(eq(s.companies.id, cid));
+  await db.update(s.companies).set({ regNo: '202301012345 (1501234-X)', address: 'Level 8, Menara Example, Jalan Ampang, 50450 Kuala Lumpur', email: 'hr@nusantara.example', phone: '+60 3-2100 0000', officeLat: 3.1579, officeLng: 101.7123, lateDeduction: true, earlyLeaveDeduction: true, workEnd: '18:00', lateGraceMinutes: 10, lateRoundMinutes: 15 }).where(eq(s.companies.id, cid));
   await db.update(s.subscriptions).set({ planCode: 'BUSINESS', currentPeriodEnd: new Date(Date.now() + 365 * 86400000) }).where(eq(s.subscriptions.companyId, cid));
 
   const yr = todayIn().slice(0, 4);
@@ -100,7 +100,7 @@ async function demo(db: DB) {
       const day = Number(d.slice(8));
       const status = i === 5 && day % 9 === 0 ? 'ABSENT' : i === 6 && day === 12 ? 'HALF_DAY' : 'PRESENT';
       const clockIn = status === 'ABSENT' ? null : new Date(`${d}T0${8 + (i % 2)}:${String(40 + i).padStart(2, '0')}:00+08:00`);
-      rows.push({ companyId: cid, employeeId: e.id, date: d, status, clockIn, clockOut: clockIn ? new Date(clockIn.getTime() + 9 * 3600000) : null, late: !!clockIn && i % 2 === 1, lateMinutes: clockIn && i % 2 === 1 ? 40 + i : 0, otHours: dow === 5 && (i === 4 || i === 5) ? 2 : 0 });
+      rows.push({ companyId: cid, employeeId: e.id, date: d, status, clockIn, clockOut: clockIn ? new Date(clockIn.getTime() + 9 * 3600000) : null, late: !!clockIn && i % 2 === 1, lateMinutes: clockIn && i % 2 === 1 ? 40 + i : 0, earlyMinutes: clockIn && i === 2 && Number(d.slice(8)) % 4 === 0 ? 45 : 0, otHours: dow === 5 && (i === 4 || i === 5) ? 2 : 0 });
     });
   }
   if (rows.length) await db.insert(s.attendance).values(rows);

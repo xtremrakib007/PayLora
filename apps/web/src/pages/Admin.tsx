@@ -94,7 +94,7 @@ export function Settings() {
   useEffect(() => { if (q.data) { setCo({ ...q.data.company }); setStat(q.data.statutory.map((s: any) => ({ ...s }))); } }, [q.data]);
   const saveCo = useAction(() => patch('/company', {
     name: co.name, regNo: co.regNo, address: co.address, email: co.email, phone: co.phone, currency: co.currency, workingDays: Number(co.workingDays), hoursPerDay: Number(co.hoursPerDay), otRate: Number(co.otRate),
-    restDays: co.restDays, workStart: co.workStart, lateDeduction: !!co.lateDeduction, lateGraceMinutes: Number(co.lateGraceMinutes) || 0, lateRoundMinutes: Number(co.lateRoundMinutes) || 1, officeLat: co.officeLat === '' || co.officeLat == null ? null : Number(co.officeLat), officeLng: co.officeLng === '' || co.officeLng == null ? null : Number(co.officeLng),
+    restDays: co.restDays, workStart: co.workStart, lateDeduction: !!co.lateDeduction, earlyLeaveDeduction: !!co.earlyLeaveDeduction, workEnd: co.workEnd, lateGraceMinutes: Number(co.lateGraceMinutes) || 0, lateRoundMinutes: Number(co.lateRoundMinutes) || 1, officeLat: co.officeLat === '' || co.officeLat == null ? null : Number(co.officeLat), officeLng: co.officeLng === '' || co.officeLng == null ? null : Number(co.officeLng),
     geofenceMeters: Number(co.geofenceMeters) || 0, disabledModules: co.disabledModules,
   }), { ok: 'Settings saved', invalidate: ['/company', '/home'], onDone: () => refresh() });
   const saveStat = useAction(() => put('/company/statutory', stat.filter((s) => s.name).map((s) => ({ name: s.name, employeeRate: Number(s.employeeRate), employerRate: Number(s.employerRate), wageCap: Number(s.wageCap) || 0 }))), { ok: 'Contributions saved', invalidate: ['/company'] });
@@ -120,15 +120,17 @@ export function Settings() {
       <div className="card"><h3>Work & payroll rules</h3><div className="form">
         <Field label="Currency"><input className="inp" {...bind('currency')} /></Field>
         <Field label="Work starts (used when no shift is rostered)"><input className="inp" type="time" {...bind('workStart')} /></Field>
+        <Field label="Work ends (used when no shift is rostered)"><input className="inp" type="time" {...bind('workEnd')} /></Field>
         <Field label="Working days per month (daily rate)"><input className="inp num" type="number" {...bind('workingDays')} /></Field>
         <Field label="Hours per day (hourly rate)"><input className="inp num" type="number" step="0.5" {...bind('hoursPerDay')} /></Field>
         <Field label="Overtime multiplier"><input className="inp num" type="number" step="0.1" {...bind('otRate')} /></Field>
         <Field label="Rest days"><div className="row">{DAYS.map((d, i) => <label key={d} className="badge" style={{ padding: '6px 9px', cursor: 'pointer' }}><input type="checkbox" checked={co.restDays.includes(i)} onChange={(e) => setCo({ ...co, restDays: e.target.checked ? [...co.restDays, i] : co.restDays.filter((x: number) => x !== i) })} /> {d}</label>)}</div></Field>
-        <div className="sect">Late arrivals</div>
+        <div className="sect">Late arrivals & early leave</div>
         <label className="full row" style={{ fontWeight: 600 }}><input type="checkbox" checked={!!co.lateDeduction} onChange={(e) => setCo({ ...co, lateDeduction: e.target.checked })} /> Deduct late time from pay (hourly rate × late minutes)</label>
-        <Field label="Grace period (minutes counted as on time)"><input className="inp num" type="number" min="0" {...bind('lateGraceMinutes')} /></Field>
-        <Field label="Round each late arrival up to"><select className="inp" {...bind('lateRoundMinutes')}>{[1, 5, 10, 15, 30, 60].map((n) => <option key={n} value={n}>{n === 1 ? 'Exact minutes' : `${n} minutes`}</option>)}</select></Field>
-        <div className="full small muted">Lateness is measured from the employee's rostered shift start, or the work start time above. Clocking in after the grace period counts every minute from the start time. HR can edit or excuse late minutes in Attendance → Daily register, or per payslip in Payroll → Adjust.</div>
+        <label className="full row" style={{ fontWeight: 600 }}><input type="checkbox" checked={!!co.earlyLeaveDeduction} onChange={(e) => setCo({ ...co, earlyLeaveDeduction: e.target.checked })} /> Deduct early-leave time from pay (hourly rate × minutes left before the end time)</label>
+        <Field label="Grace period in minutes (applies to both)"><input className="inp num" type="number" min="0" {...bind('lateGraceMinutes')} /></Field>
+        <Field label="Round each late arrival / early leave up to"><select className="inp" {...bind('lateRoundMinutes')}>{[1, 5, 10, 15, 30, 60].map((n) => <option key={n} value={n}>{n === 1 ? 'Exact minutes' : `${n} minutes`}</option>)}</select></Field>
+        <div className="full small muted">Lateness is measured from the rostered shift start (or work start above); early leave from the shift end (or work end above), when staff clock out. Beyond the grace period every minute counts. HR can edit or excuse minutes in Attendance → Daily register, or per payslip in Payroll → Adjust.</div>
         <div className="sect">Clock-in geofence</div>
         <Field label="Office latitude"><input className="inp num" {...bind('officeLat')} /></Field><Field label="Office longitude"><input className="inp num" {...bind('officeLng')} /></Field>
         <Field label="Allowed radius in metres (0 = off)"><input className="inp num" type="number" {...bind('geofenceMeters')} /></Field>

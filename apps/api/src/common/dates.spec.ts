@@ -1,4 +1,4 @@
-import { lateMinutes, roundUpMinutes } from './dates';
+import { earlyMinutes, lateMinutes, roundUpMinutes } from './dates';
 
 describe('lateMinutes', () => {
   it('ignores lateness inside the grace period', () => {
@@ -14,6 +14,18 @@ describe('lateMinutes', () => {
     expect(lateMinutes('22:50', '23:00', 0)).toBe(0);
     expect(lateMinutes('23:20', '23:00', 5)).toBe(20);
     expect(lateMinutes('00:15', '23:00', 5)).toBe(75);
+  });
+});
+
+describe('earlyMinutes', () => {
+  it('counts minutes before the end time after grace', () => {
+    expect(earlyMinutes('17:55', '18:00', 10)).toBe(0);
+    expect(earlyMinutes('17:30', '18:00', 10)).toBe(30);
+    expect(earlyMinutes('18:20', '18:00', 0)).toBe(0);
+  });
+  it('handles overnight shifts', () => {
+    expect(earlyMinutes('05:30', '07:00', 0)).toBe(90);
+    expect(earlyMinutes('07:30', '07:00', 0)).toBe(0);
   });
 });
 

@@ -53,6 +53,7 @@ function drawSlip(doc: PDFKit.PDFDocument, co: PdfCompany, s: PdfSlip) {
   if (d.otherEarnings) earn.push(['Other earnings', d.otherEarnings]);
   if (d.unpaidDeduction) earn.push([`Unpaid leave / absence (${d.unpaidDays} d)`, -d.unpaidDeduction]);
   if (d.lateDeduction) earn.push([`Late arrival (${fmtMins(d.lateMinutes)})`, -d.lateDeduction]);
+  if (d.earlyDeduction) earn.push([`Early leave (${fmtMins(d.earlyMinutes)})`, -d.earlyDeduction]);
   const ded: [string, number][] = d.statutory.filter((x) => x.employee).map((x) => [`${x.name} (employee)`, x.employee] as [string, number]);
   if (d.tax) ded.push(['Income tax (PCB)', d.tax]);
   d.deductions.forEach((x) => ded.push([x.name, x.amount]));

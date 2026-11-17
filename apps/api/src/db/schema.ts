@@ -67,8 +67,10 @@ export const companies = pgTable('companies', {
   otRate: numeric('ot_rate', { precision: 4, scale: 2, mode: 'number' }).notNull().default(1.5),
   restDays: integer('rest_days').array().notNull().default(sql`'{0}'::integer[]`),
   workStart: text('work_start').notNull().default('09:00'),
+  workEnd: text('work_end').notNull().default('18:00'),
   lateDeduction: boolean('late_deduction').notNull().default(false), // deduct late minutes from pay
-  lateGraceMinutes: integer('late_grace_minutes').notNull().default(10), // lateness within grace is ignored
+  earlyLeaveDeduction: boolean('early_leave_deduction').notNull().default(false), // deduct minutes left before shift end
+  lateGraceMinutes: integer('late_grace_minutes').notNull().default(10), // lateness / early leave within grace is ignored
   lateRoundMinutes: integer('late_round_minutes').notNull().default(1), // round each late arrival up to this block
   officeLat: doublePrecision('office_lat'),
   officeLng: doublePrecision('office_lng'),
@@ -222,6 +224,8 @@ export const attendance = pgTable('attendance', {
   late: boolean('late').notNull().default(false),
   lateMinutes: integer('late_minutes').notNull().default(0), // minutes after shift/work start (0 when within grace)
   lateWaived: boolean('late_waived').notNull().default(false), // HR excused this lateness
+  earlyMinutes: integer('early_minutes').notNull().default(0), // minutes left before shift/work end
+  earlyWaived: boolean('early_waived').notNull().default(false),
   otHours: numeric('ot_hours', { precision: 5, scale: 2, mode: 'number' }).notNull().default(0),
 }, (t) => [uniqueIndex('attendance_emp_date').on(t.employeeId, t.date), index('attendance_company_date').on(t.companyId, t.date)]);
 

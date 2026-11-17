@@ -30,7 +30,7 @@ export default function Payslips() {
           <Section title="Earnings">
             <Li k="Basic salary" v={d.basic} />{d.allowances.map((a: any) => <Li key={a.name} k={a.name} v={a.amount} />)}
             {!!d.otPay && <Li k={`Overtime (${d.otHours} h)`} v={d.otPay} />}{!!d.bonus && <Li k="Bonus / commission" v={d.bonus} />}{!!d.otherEarnings && <Li k="Other earnings" v={d.otherEarnings} />}
-            {!!d.unpaidDeduction && <Li k={`Unpaid leave / absence (${d.unpaidDays} d)`} v={-d.unpaidDeduction} />}{!!d.lateDeduction && <Li k={`Late arrival (${fmtMins(d.lateMinutes)})`} v={-d.lateDeduction} />}<Li k="Gross earnings" v={d.gross} bold />
+            {!!d.unpaidDeduction && <Li k={`Unpaid leave / absence (${d.unpaidDays} d)`} v={-d.unpaidDeduction} />}{!!d.lateDeduction && <Li k={`Late arrival (${fmtMins(d.lateMinutes)})`} v={-d.lateDeduction} />}{!!d.earlyDeduction && <Li k={`Early leave (${fmtMins(d.earlyMinutes)})`} v={-d.earlyDeduction} />}<Li k="Gross earnings" v={d.gross} bold />
           </Section>
           <Section title="Deductions">
             {d.statutory.filter((s: any) => s.employee).map((s: any) => <Li key={s.name} k={`${s.name} (employee)`} v={s.employee} />)}

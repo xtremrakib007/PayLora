@@ -15,6 +15,13 @@
       "when": 1794951445154,
       "tag": "0001_late_deduction",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794951795329,
+      "tag": "0002_early_leave",
+      "breakpoints": true
     }
   ]
 }

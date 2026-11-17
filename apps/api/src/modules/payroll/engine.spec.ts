@@ -48,6 +48,14 @@ describe('computePayslip', () => {
     expect(waived.lateDeduction).toBe(0);
   });
 
+  it('deducts early-leave minutes when enabled', () => {
+    const on = computePayslip(emp(), { ...settings, earlyLeaveDeduction: true }, schemes, { otHours: 0, unpaidDays: 0, earlyMinutes: 60 });
+    expect(on.earlyDeduction).toBe(10.58);
+    const off = computePayslip(emp(), settings, schemes, { otHours: 0, unpaidDays: 0, earlyMinutes: 60 });
+    expect(off.earlyDeduction).toBe(0);
+    expect(on.gross).toBe(r(off.gross - 10.58));
+  });
+
   it('pays reimbursements outside gross and statutory', () => {
     const base = computePayslip(emp(), settings, schemes, { otHours: 0, unpaidDays: 0 });
     const p = computePayslip(emp(), settings, schemes, { otHours: 0, unpaidDays: 0 }, {}, [{ name: 'Travel', amount: 120.5 }]);

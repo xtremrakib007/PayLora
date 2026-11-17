@@ -50,5 +50,16 @@ export function lateMinutes(clock: string, start: string, grace: number) {
   return diff > Math.max(0, grace) ? diff : 0;
 }
 
+/**
+ * Minutes left early for a clock-out at `clock` against an end time (HH:MM).
+ * Within `grace` counts as on time; leaving after the end (overtime) is 0.
+ * Works for overnight shifts (e.g. end 07:00, clock-out 05:30 → 90).
+ */
+export function earlyMinutes(clock: string, end: string, grace: number) {
+  const diff = (toMin(end) - toMin(clock) + 1440) % 1440;
+  if (diff > 720) return 0;
+  return diff > Math.max(0, grace) ? diff : 0;
+}
+
 /** Round minutes up to a block (e.g. 15 → 1..15 becomes 15). */
 export const roundUpMinutes = (min: number, block: number) => (block > 1 && min > 0 ? Math.ceil(min / block) * block : Math.max(0, Math.round(min)));
