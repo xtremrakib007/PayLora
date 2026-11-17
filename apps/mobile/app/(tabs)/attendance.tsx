@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { ClockCard } from '../../src/ClockCard';
-import { addMonths, fmtTime, monthLabel, thisMonth } from '../../src/format';
+import { addMonths, fmtMins, fmtTime, monthLabel, thisMonth } from '../../src/format';
 import { useGet } from '../../src/hooks';
 import { C } from '../../src/theme';
 import { Badge, Btn, Empty, ListItem, Loading, Row, Screen, Section, T } from '../../src/ui';
@@ -21,7 +21,7 @@ export default function Attendance() {
       </Row>
       {s && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {[['Present', s.present, C.ok], ['Absent', s.absent, C.bad], ['Half day', s.half, C.warn], ['Leave', s.leave, C.info], ['Late', s.late, C.warn], ['OT hours', s.otHours, C.brand]].map(([l, n, c]) => (
+          {[['Present', s.present, C.ok], ['Absent', s.absent, C.bad], ['Half day', s.half, C.warn], ['Leave', s.leave, C.info], [s.lateMinutes ? `Late · ${fmtMins(s.lateMinutes)}` : 'Late', s.late, C.warn], ['OT hours', s.otHours, C.brand]].map(([l, n, c]) => (
             <View key={l as string} style={{ width: '31.5%', backgroundColor: '#fff', borderRadius: 14, padding: 12 }}><T bold style={{ fontSize: 22, color: c }}>{String(n)}</T><T muted small>{l as string}</T></View>))}
         </View>
       )}
@@ -29,7 +29,7 @@ export default function Attendance() {
         {!q.data ? <Loading /> : !q.data.records.length ? <Empty title="No records this month" icon="fingerprint" /> : [...q.data.records].reverse().map((r: any) => (
           <ListItem key={r.id} title={new Date(r.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
             sub={r.clockIn ? `${fmtTime(r.clockIn)} – ${fmtTime(r.clockOut)}${r.clockIn && r.clockOut ? ` · ${((new Date(r.clockOut).getTime() - new Date(r.clockIn).getTime()) / 3600000).toFixed(1)} h` : ''}${r.clockInLoc?.distance != null ? ` · ${r.clockInLoc.distance} m` : ''}` : 'Marked by HR'}
-            right={<View style={{ alignItems: 'flex-end', gap: 4 }}><Badge s={r.status} />{r.late && <Badge s="PENDING" label="Late" />}</View>} />))}
+            right={<View style={{ alignItems: 'flex-end', gap: 4 }}><Badge s={r.status} />{(r.late || r.lateMinutes > 0) && <Badge s="PENDING" label={`${r.lateMinutes ? fmtMins(r.lateMinutes) + ' late' : 'Late'}${r.lateWaived ? ' · excused' : ''}`} />}</View>} />))}
       </Section>
     </Screen>
   );

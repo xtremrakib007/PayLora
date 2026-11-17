@@ -14,7 +14,7 @@ apps/
 | Area | Apps |
 |---|---|
 | People | **Profiles** (directory + employee records), **Onboarding** (checklists from templates), **Performance** (review cycles, self/manager reviews, goals), **Training** (courses, assignments, progress) |
-| Time | **Attendance** (GPS clock-in with office geofence, daily register, monthly summary), **Leave** (requests, approvals, balances, holidays), **Timesheets** (hours by project, approvals), **Shifts** (weekly roster, shift types) |
+| Time | **Attendance** (GPS clock-in with office geofence, late-arrival tracking and pay deduction, daily register, monthly summary), **Leave** (requests, approvals, balances, holidays), **Timesheets** (hours by project, approvals), **Shifts** (weekly roster, shift types) |
 | Money | **Payroll** (monthly runs, adjustments, finalize/paid, bank CSV, PDF payslips), **Payslips** (self-service), **Claims** (approved claims are paid through the next payroll run) |
 | Hiring | **Recruitment** (candidate pipeline, hire → employee + onboarding), **Job Board** (public careers page per company: `/careers/<slug>`) |
 | Engagement | **Feed** (posts, likes, comments, announcements), **Surveys** (anonymous pulse surveys with results), **Services** (HR helpdesk tickets) |
@@ -49,6 +49,7 @@ Each company can also switch individual apps off in **Settings → Apps**.
 - daily rate = basic ÷ working days per month; hourly = daily ÷ hours per day
 - overtime = hourly × OT hours × OT multiplier (OT hours come from attendance)
 - unpaid days = absences + ½ × half days + approved **unpaid** leave (working days only)
+- late arrival (optional, Settings → Late arrivals) = hourly × late minutes. Lateness is measured from the rostered shift start (or the company work start), ignores a grace period, can be rounded up to 5/10/15/30/60-minute blocks, and HR can edit or excuse it per day (Attendance → Daily register) or per payslip (Payroll → Adjust)
 - statutory contributions = min(gross, wage cap) × rate — defaults are EPF 11%/13%, SOCSO 0.5%/1.75% (cap RM6,000), EIS 0.2%/0.2% (cap RM6,000), editable per company
 - PCB (income tax) is a fixed monthly amount per employee, overridable per run
 - approved claims are added as non-taxable reimbursements

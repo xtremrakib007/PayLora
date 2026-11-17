@@ -13,6 +13,7 @@ const CompanyDto = z.object({
   email: z.string().max(200).nullish(), phone: z.string().max(60).nullish(), currency: z.string().trim().min(1).max(6),
   workingDays: z.coerce.number().int().min(1).max(31), hoursPerDay: z.coerce.number().min(1).max(24), otRate: z.coerce.number().min(1).max(5),
   restDays: z.array(z.number().int().min(0).max(6)).max(6), workStart: z.string().regex(/^\d{2}:\d{2}$/),
+  lateDeduction: z.boolean(), lateGraceMinutes: z.coerce.number().int().min(0).max(240), lateRoundMinutes: z.coerce.number().int().refine((n) => [1, 5, 10, 15, 30, 60].includes(n), 'must be 1, 5, 10, 15, 30 or 60'),
   officeLat: z.coerce.number().min(-90).max(90).nullish(), officeLng: z.coerce.number().min(-180).max(180).nullish(),
   geofenceMeters: z.coerce.number().int().min(0).max(50000), disabledModules: z.array(z.enum(MODULES)),
 }).partial();

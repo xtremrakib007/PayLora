@@ -67,6 +67,9 @@ export const companies = pgTable('companies', {
   otRate: numeric('ot_rate', { precision: 4, scale: 2, mode: 'number' }).notNull().default(1.5),
   restDays: integer('rest_days').array().notNull().default(sql`'{0}'::integer[]`),
   workStart: text('work_start').notNull().default('09:00'),
+  lateDeduction: boolean('late_deduction').notNull().default(false), // deduct late minutes from pay
+  lateGraceMinutes: integer('late_grace_minutes').notNull().default(10), // lateness within grace is ignored
+  lateRoundMinutes: integer('late_round_minutes').notNull().default(1), // round each late arrival up to this block
   officeLat: doublePrecision('office_lat'),
   officeLng: doublePrecision('office_lng'),
   geofenceMeters: integer('geofence_meters').notNull().default(0), // 0 = no geofence
@@ -217,6 +220,8 @@ export const attendance = pgTable('attendance', {
   clockInLoc: jsonb('clock_in_loc').$type<GeoPoint>(),
   clockOutLoc: jsonb('clock_out_loc').$type<GeoPoint>(),
   late: boolean('late').notNull().default(false),
+  lateMinutes: integer('late_minutes').notNull().default(0), // minutes after shift/work start (0 when within grace)
+  lateWaived: boolean('late_waived').notNull().default(false), // HR excused this lateness
   otHours: numeric('ot_hours', { precision: 5, scale: 2, mode: 'number' }).notNull().default(0),
 }, (t) => [uniqueIndex('attendance_emp_date').on(t.employeeId, t.date), index('attendance_company_date').on(t.companyId, t.date)]);
 

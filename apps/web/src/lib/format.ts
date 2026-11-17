@@ -20,3 +20,4 @@ export const titleCase = (s?: string | null) => (s || '').toLowerCase().replace(
 export const initials = (n?: string | null) => (n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
 const AV = ['#0d6b5c', '#2357a6', '#8a4fbf', '#c0572b', '#1d7f48', '#a1702a', '#3a6f8f', '#b23a62'];
 export const avatarColor = (s: string) => AV[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % AV.length];
+export const fmtMins = (m?: number | null) => { const n = Math.round(Number(m) || 0); return n >= 60 ? `${Math.floor(n / 60)} h ${n % 60 ? `${n % 60} min` : ''}`.trim() : `${n} min`; };

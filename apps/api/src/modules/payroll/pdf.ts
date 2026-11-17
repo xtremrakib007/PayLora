@@ -6,6 +6,7 @@ export type PdfSlip = { period: string; status: string; data: PayslipData };
 
 const BRAND = '#0d6b5c', INK = '#10201d', MUTED = '#5f6d6a', LINE = '#e1e7e5', TINT = '#e6f2ef';
 const fmt = (n: number) => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const fmtMins = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`);
 const monthLabel = (p: string) => new Date(Date.UTC(+p.slice(0, 4), +p.slice(5, 7) - 1, 1)).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
 /** Render one or more payslips (one A4 page each) to a PDF buffer. */
@@ -51,6 +52,7 @@ function drawSlip(doc: PDFKit.PDFDocument, co: PdfCompany, s: PdfSlip) {
   if (d.bonus) earn.push(['Bonus / commission', d.bonus]);
   if (d.otherEarnings) earn.push(['Other earnings', d.otherEarnings]);
   if (d.unpaidDeduction) earn.push([`Unpaid leave / absence (${d.unpaidDays} d)`, -d.unpaidDeduction]);
+  if (d.lateDeduction) earn.push([`Late arrival (${fmtMins(d.lateMinutes)})`, -d.lateDeduction]);
   const ded: [string, number][] = d.statutory.filter((x) => x.employee).map((x) => [`${x.name} (employee)`, x.employee] as [string, number]);
   if (d.tax) ded.push(['Income tax (PCB)', d.tax]);
   d.deductions.forEach((x) => ded.push([x.name, x.amount]));

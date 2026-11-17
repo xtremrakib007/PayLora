@@ -14,7 +14,7 @@ import { renderPayslips } from './pdf';
 
 const AdjDto = z.object({
   bonus: z.coerce.number().min(0).optional(), otherEarnings: z.coerce.number().min(0).optional(),
-  otHours: z.coerce.number().min(0).nullish(), unpaidDays: z.coerce.number().min(0).nullish(), tax: z.coerce.number().min(0).nullish(),
+  otHours: z.coerce.number().min(0).nullish(), unpaidDays: z.coerce.number().min(0).nullish(), lateMinutes: z.coerce.number().int().min(0).nullish(), tax: z.coerce.number().min(0).nullish(),
   otherDeduction: z.coerce.number().min(0).optional(), note: z.string().max(300).optional(),
 });
 const csvCell = (v: unknown) => { const s = String(v ?? ''); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
@@ -69,9 +69,9 @@ export class PayrollService {
     const e = x.e;
     const ee: EngineEmployee = { ...e, department: x.dept, basicSalary: e.basicSalary, monthlyTax: e.monthlyTax, allowances: e.allowances, deductions: e.deductions };
     const a = inp.att.get(e.id);
-    return computePayslip(ee, { workingDays: inp.co.workingDays, hoursPerDay: inp.co.hoursPerDay, otRate: inp.co.otRate },
+    return computePayslip(ee, { workingDays: inp.co.workingDays, hoursPerDay: inp.co.hoursPerDay, otRate: inp.co.otRate, lateDeduction: inp.co.lateDeduction },
       inp.schemes.map((s) => ({ name: s.name, employeeRate: s.employeeRate, employerRate: s.employerRate, wageCap: s.wageCap })),
-      { otHours: a?.otHours ?? 0, unpaidDays: a?.unpaidDays ?? 0 }, adj, reimb);
+      { otHours: a?.otHours ?? 0, unpaidDays: a?.unpaidDays ?? 0, lateMinutes: a?.lateMinutes ?? 0 }, adj, reimb);
   }
 
   /** Create or recalculate a draft run from current employee, attendance, leave and claims data. Keeps per-employee adjustments. */
@@ -147,10 +147,10 @@ export class PayrollService {
     const ds = slips.map((s) => s.data as PayslipData);
     if (kind === 'bank') return toCsv([['Employee code', 'Name', 'Bank', 'Account number', 'Amount', 'Reference'], ...ds.map((d) => [d.employee.code, d.employee.name, d.employee.bankName, d.employee.bankAccount, d.net.toFixed(2), `Salary ${period}`])]);
     const names = [...new Set(ds.flatMap((d) => d.statutory.map((s) => s.name)))];
-    const head = ['Code', 'Name', 'Department', 'Basic', 'Allowances', 'OT hours', 'OT pay', 'Bonus', 'Other earnings', 'Unpaid days', 'Unpaid deduction', 'Gross', ...names.map((n) => `${n} (EE)`), 'PCB', 'Other deductions', 'Total deductions', 'Reimbursements', 'Net pay', ...names.map((n) => `${n} (ER)`), 'Employer cost'];
+    const head = ['Code', 'Name', 'Department', 'Basic', 'Allowances', 'OT hours', 'OT pay', 'Bonus', 'Other earnings', 'Unpaid days', 'Unpaid deduction', 'Late minutes', 'Late deduction', 'Gross', ...names.map((n) => `${n} (EE)`), 'PCB', 'Other deductions', 'Total deductions', 'Reimbursements', 'Net pay', ...names.map((n) => `${n} (ER)`), 'Employer cost'];
     const rows = ds.map((d) => {
       const g = (n: string) => d.statutory.find((s) => s.name === n);
-      return [d.employee.code, d.employee.name, d.employee.department, d.basic, d.allowanceTotal, d.otHours, d.otPay, d.bonus, d.otherEarnings, d.unpaidDays, d.unpaidDeduction, d.gross,
+      return [d.employee.code, d.employee.name, d.employee.department, d.basic, d.allowanceTotal, d.otHours, d.otPay, d.bonus, d.otherEarnings, d.unpaidDays, d.unpaidDeduction, d.lateMinutes ?? 0, d.lateDeduction ?? 0, d.gross,
         ...names.map((n) => g(n)?.employee ?? 0), d.tax, r2(d.deductionTotal + d.otherDeduction), d.totalDeductions, d.reimbursementTotal, d.net, ...names.map((n) => g(n)?.employer ?? 0), d.employerCost];
     });
     return toCsv([head, ...rows]);

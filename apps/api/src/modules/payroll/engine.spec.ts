@@ -37,6 +37,17 @@ describe('computePayslip', () => {
     expect(p.totalDeductions).toBe(r(3050 * 0.117 + 80 + 20));
   });
 
+  it('deducts late minutes at the hourly rate only when enabled', () => {
+    const off = computePayslip(emp(), settings, schemes, { otHours: 0, unpaidDays: 0, lateMinutes: 90 });
+    expect(off.lateDeduction).toBe(0);
+    const on = computePayslip(emp(), { ...settings, lateDeduction: true }, schemes, { otHours: 0, unpaidDays: 0, lateMinutes: 90 });
+    expect(on.lateMinutes).toBe(90);
+    expect(on.lateDeduction).toBe(15.87); // 2200/26/8 × 1.5 h
+    expect(on.gross).toBe(r(off.gross - 15.87));
+    const waived = computePayslip(emp(), { ...settings, lateDeduction: true }, schemes, { otHours: 0, unpaidDays: 0, lateMinutes: 90 }, { lateMinutes: 0 });
+    expect(waived.lateDeduction).toBe(0);
+  });
+
   it('pays reimbursements outside gross and statutory', () => {
     const base = computePayslip(emp(), settings, schemes, { otHours: 0, unpaidDays: 0 });
     const p = computePayslip(emp(), settings, schemes, { otHours: 0, unpaidDays: 0 }, {}, [{ name: 'Travel', amount: 120.5 }]);

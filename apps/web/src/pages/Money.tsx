@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { del, download, patch, post } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { addMonths, fmtDate, fmtShort, monthLabel, money, num, thisMonth, titleCase, today } from '../lib/format';
+import { addMonths, fmtDate, fmtMins, fmtShort, monthLabel, money, num, thisMonth, titleCase, today } from '../lib/format';
 import { useAction, useGet } from '../lib/hooks';
 import { isManager } from '../lib/modules';
 import { Badge, Empty, Field, Modal, Seg, Spinner, useConfirm, Who } from '../components/ui';
@@ -58,16 +58,17 @@ export function Payroll() {
           </div>
           {!draft && <div className="banner info">This run is {r.status.toLowerCase()} and locked. Reopen it to change figures.</div>}
           <div className="tw"><table className="t">
-            <thead><tr><th>Employee</th><th className="n">Basic</th><th className="n">Allow.</th><th className="n">OT</th><th className="n">Bonus</th><th className="n">Unpaid</th><th className="n">Gross</th><th className="n">Statutory</th><th className="n">PCB</th><th className="n">Other ded.</th><th className="n">Claims</th><th className="n">Net</th><th /></tr></thead>
+            <thead><tr><th>Employee</th><th className="n">Basic</th><th className="n">Allow.</th><th className="n">OT</th><th className="n">Bonus</th><th className="n">Unpaid</th><th className="n">Late</th><th className="n">Gross</th><th className="n">Statutory</th><th className="n">PCB</th><th className="n">Other ded.</th><th className="n">Claims</th><th className="n">Net</th><th /></tr></thead>
             <tbody>{run.data.payslips.map((p: any) => { const d = p.data; return (
               <tr key={p.id}><td><Who name={d.employee.name} sub={d.employee.code + (d.note ? ` · ${d.note}` : '')} id={p.employeeId} /></td>
                 <td className="n">{num(d.basic)}</td><td className="n">{num(d.allowanceTotal)}</td><td className="n">{d.otPay ? <>{num(d.otPay)}<div className="small faint">{d.otHours} h</div></> : '—'}</td>
                 <td className="n">{d.bonus + d.otherEarnings ? num(d.bonus + d.otherEarnings) : '—'}</td><td className="n">{d.unpaidDeduction ? <>−{num(d.unpaidDeduction)}<div className="small faint">{d.unpaidDays} d</div></> : '—'}</td>
+                <td className="n">{d.lateDeduction ? <>−{num(d.lateDeduction)}<div className="small faint">{fmtMins(d.lateMinutes)}</div></> : '—'}</td>
                 <td className="n"><b>{num(d.gross)}</b></td><td className="n">{num(d.statutoryEmployee)}</td><td className="n">{d.tax ? num(d.tax) : '—'}</td><td className="n">{d.deductionTotal + d.otherDeduction ? num(d.deductionTotal + d.otherDeduction) : '—'}</td>
                 <td className="n">{d.reimbursementTotal ? num(d.reimbursementTotal) : '—'}</td><td className="n"><b style={{ color: 'var(--brand)' }}>{num(d.net)}</b></td>
                 <td className="n" style={{ whiteSpace: 'nowrap' }}>{draft && <button className="btn sm" onClick={() => setAdj(p)}>Adjust</button>} <button className="btn sm" onClick={() => setSlip({ ...p, period, status: r.status })}>View</button></td></tr>); })}
             </tbody>
-            <tfoot><tr><td>Total</td><td colSpan={5} /><td className="n">{num(t.gross)}</td><td colSpan={4} /><td className="n">{num(t.net)}</td><td /></tr></tfoot>
+            <tfoot><tr><td>Total</td><td colSpan={6} /><td className="n">{num(t.gross)}</td><td colSpan={4} /><td className="n">{num(t.net)}</td><td /></tr></tfoot>
           </table></div>
           <p className="small muted">Statutory contributions use the rates in Settings (simplified percentage method). Check them against the official contribution tables before paying.</p>
         </>}
@@ -86,7 +87,7 @@ export function Payroll() {
 
 function Adjust({ period, slip, onClose }: { period: string; slip: any; onClose: () => void }) {
   const a = slip.adjustments || {};
-  const [f, setF] = useState<any>({ bonus: a.bonus ?? '', otherEarnings: a.otherEarnings ?? '', otHours: a.otHours ?? '', unpaidDays: a.unpaidDays ?? '', tax: a.tax ?? '', otherDeduction: a.otherDeduction ?? '', note: a.note ?? '' });
+  const [f, setF] = useState<any>({ bonus: a.bonus ?? '', otherEarnings: a.otherEarnings ?? '', otHours: a.otHours ?? '', unpaidDays: a.unpaidDays ?? '', lateMinutes: a.lateMinutes ?? '', tax: a.tax ?? '', otherDeduction: a.otherDeduction ?? '', note: a.note ?? '' });
   const save = useAction(() => {
     const body: any = {};
     Object.entries(f).forEach(([k, v]) => { if (v !== '' && v != null) body[k] = k === 'note' ? v : Number(v); });
@@ -101,6 +102,7 @@ function Adjust({ period, slip, onClose }: { period: string; slip: any; onClose:
         <Field label="Other earnings"><input className="inp num" type="number" step="0.01" {...bind('otherEarnings')} /></Field>
         <Field label="Overtime hours"><input className="inp num" type="number" step="0.5" placeholder={String(slip.data.otHours)} {...bind('otHours')} /></Field>
         <Field label="Unpaid days"><input className="inp num" type="number" step="0.5" placeholder={String(slip.data.unpaidDays)} {...bind('unpaidDays')} /></Field>
+        <Field label="Late minutes (0 = excuse all)"><input className="inp num" type="number" step="1" min="0" placeholder={String(slip.data.lateMinutes ?? 0)} {...bind('lateMinutes')} /></Field>
         <Field label="Income tax (PCB) this month"><input className="inp num" type="number" step="0.01" placeholder={String(slip.data.tax)} {...bind('tax')} /></Field>
         <Field label="One-off deduction"><input className="inp num" type="number" step="0.01" {...bind('otherDeduction')} /></Field>
         <Field label="Note on payslip" full><input className="inp" {...bind('note')} /></Field>
@@ -114,6 +116,7 @@ export function PayslipView({ data: d, period, status }: { data: any; period: st
   const earn: [string, number][] = [['Basic salary', d.basic], ...d.allowances.map((a: any) => [a.name, a.amount])];
   if (d.otPay) earn.push([`Overtime (${d.otHours} h)`, d.otPay]); if (d.bonus) earn.push(['Bonus / commission', d.bonus]); if (d.otherEarnings) earn.push(['Other earnings', d.otherEarnings]);
   if (d.unpaidDeduction) earn.push([`Unpaid leave / absence (${d.unpaidDays} d)`, -d.unpaidDeduction]);
+  if (d.lateDeduction) earn.push([`Late arrival (${fmtMins(d.lateMinutes)})`, -d.lateDeduction]);
   const ded: [string, number][] = d.statutory.filter((s: any) => s.employee).map((s: any) => [`${s.name} (employee)`, s.employee]);
   if (d.tax) ded.push(['Income tax (PCB)', d.tax]); d.deductions.forEach((x: any) => ded.push([x.name, x.amount])); if (d.otherDeduction) ded.push(['Other deduction', d.otherDeduction]);
   const Li = ([k, v]: [string, number]) => <div className="li" key={k}><span>{k}</span><span className="num">{v < 0 ? '−' + num(-v) : num(v)}</span></div>;

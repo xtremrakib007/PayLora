@@ -19,3 +19,4 @@ export const ago = (s: string) => {
   const m = Math.round((Date.now() - new Date(s).getTime()) / 60000);
   if (m < 1) return 'just now'; if (m < 60) return `${m}m`; const h = Math.round(m / 60); if (h < 24) return `${h}h`; const d = Math.round(h / 24); return d < 7 ? `${d}d` : fmtShort(s);
 };
+export const fmtMins = (m?: number | null) => { const n = Math.round(Number(m) || 0); return n >= 60 ? `${Math.floor(n / 60)} h ${n % 60 ? `${n % 60} min` : ''}`.trim() : `${n} min`; };

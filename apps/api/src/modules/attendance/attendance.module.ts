@@ -3,7 +3,7 @@ import { and, asc, between, eq, gte, inArray, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { Ctx, CurrentCtx, RequireModule, Roles } from '../../common/context';
 import { AccessService } from '../../common/core';
-import { distanceMeters, monthEnd, monthStart, timeIn, todayIn, workDays } from '../../common/dates';
+import { distanceMeters, lateMinutes, monthEnd, monthStart, roundUpMinutes, timeIn, todayIn, workDays } from '../../common/dates';
 import { r2 } from '../../common/util';
 import { parse, zDate, zPeriod } from '../../common/validate';
 import { DB, InjectDb } from '../../db/db';
@@ -11,11 +11,16 @@ import { attendance, employees, leaveRequests, leaveTypes, shifts, shiftTemplate
 
 const MarkDto = z.object({
   date: zDate,
-  entries: z.array(z.object({ employeeId: z.uuid(), status: z.enum(['PRESENT', 'ABSENT', 'HALF_DAY', 'LEAVE']).nullable(), otHours: z.coerce.number().min(0).max(24).optional() })).max(2000),
+  entries: z.array(z.object({
+    employeeId: z.uuid(), status: z.enum(['PRESENT', 'ABSENT', 'HALF_DAY', 'LEAVE']).nullable(), otHours: z.coerce.number().min(0).max(24).optional(),
+    lateMinutes: z.coerce.number().int().min(0).max(1440).optional(), lateWaived: z.boolean().optional(),
+  })).max(2000),
 });
 const ClockDto = z.object({ action: z.enum(['in', 'out']), lat: z.number().min(-90).max(90).optional(), lng: z.number().min(-180).max(180).optional(), accuracy: z.number().min(0).optional() });
 
-export type AttSummary = { present: number; absent: number; half: number; leave: number; late: number; otHours: number; unpaidLeaveDays: number; unpaidDays: number };
+/** lateMinutes = minutes counted for pay (after grace, rounding and waivers). */
+export type AttSummary = { present: number; absent: number; half: number; leave: number; late: number; lateMinutes: number; otHours: number; unpaidLeaveDays: number; unpaidDays: number };
+const EMPTY: AttSummary = { present: 0, absent: 0, half: 0, leave: 0, late: 0, lateMinutes: 0, otHours: 0, unpaidLeaveDays: 0, unpaidDays: 0 };
 
 @Injectable()
 export class AttendanceService {
@@ -31,11 +36,12 @@ export class AttendanceService {
       .from(leaveRequests).innerJoin(leaveTypes, eq(leaveTypes.id, leaveRequests.leaveTypeId))
       .where(and(eq(leaveRequests.companyId, companyId), eq(leaveRequests.status, 'APPROVED'), eq(leaveTypes.paid, false), lte(leaveRequests.fromDate, to), gte(leaveRequests.toDate, from)));
     const out = new Map<string, AttSummary>();
-    const get = (id: string) => { if (!out.has(id)) out.set(id, { present: 0, absent: 0, half: 0, leave: 0, late: 0, otHours: 0, unpaidLeaveDays: 0, unpaidDays: 0 }); return out.get(id)!; };
+    const get = (id: string) => { if (!out.has(id)) out.set(id, { ...EMPTY }); return out.get(id)!; };
     for (const r of rows) {
       const s = get(r.employeeId);
       if (r.status === 'PRESENT') s.present++; else if (r.status === 'ABSENT') s.absent++; else if (r.status === 'HALF_DAY') s.half++; else if (r.status === 'LEAVE') s.leave++;
-      if (r.late) s.late++;
+      if (r.late || r.lateMinutes > 0) s.late++;
+      if (r.lateMinutes > 0 && !r.lateWaived && (r.status === 'PRESENT' || r.status === 'HALF_DAY')) s.lateMinutes += roundUpMinutes(r.lateMinutes, co.lateRoundMinutes);
       s.otHours += Number(r.otHours) || 0;
     }
     for (const l of lv) get(l.employeeId).unpaidLeaveDays += workDays(l.fromDate, l.toDate, co.restDays, hol, period);
@@ -69,7 +75,12 @@ export class AttendanceService {
     for (const e of allowed.filter((x) => ok.has(x.employeeId))) {
       const set: Record<string, unknown> = { status: e.status };
       if (e.otHours !== undefined) set.otHours = e.otHours;
-      await this.db.insert(attendance).values({ companyId: c.companyId, employeeId: e.employeeId, date: d.date, status: e.status, otHours: e.otHours ?? 0 })
+      if (e.lateMinutes !== undefined) { set.lateMinutes = e.lateMinutes; set.late = e.lateMinutes > 0; }
+      if (e.lateWaived !== undefined) set.lateWaived = e.lateWaived;
+      await this.db.insert(attendance).values({
+        companyId: c.companyId, employeeId: e.employeeId, date: d.date, status: e.status, otHours: e.otHours ?? 0,
+        lateMinutes: e.lateMinutes ?? 0, late: (e.lateMinutes ?? 0) > 0, lateWaived: e.lateWaived ?? false,
+      })
         .onConflictDoUpdate({ target: [attendance.employeeId, attendance.date], set });
     }
     return { updated: ok.size };
@@ -80,7 +91,7 @@ export class AttendanceService {
     const emps = await this.db.select({ id: employees.id, name: employees.name, code: employees.code }).from(employees)
       .where(and(eq(employees.companyId, c.companyId), eq(employees.status, 'ACTIVE'), vis ? inArray(employees.id, vis.length ? vis : ['00000000-0000-0000-0000-000000000000']) : undefined)).orderBy(asc(employees.name));
     const sum = await this.summary(c.companyId, period, emps.map((e) => e.id));
-    return emps.map((e) => ({ employee: e, ...(sum.get(e.id) ?? { present: 0, absent: 0, half: 0, leave: 0, late: 0, otHours: 0, unpaidLeaveDays: 0, unpaidDays: 0 }) }));
+    return emps.map((e) => ({ employee: e, ...(sum.get(e.id) ?? EMPTY) }));
   }
 
   /** Staff self clock-in / clock-out with optional GPS geofence. */
@@ -102,9 +113,13 @@ export class AttendanceService {
     const now = new Date();
     if (d.action === 'in') {
       if (existing?.clockIn) throw new BadRequestException('You already clocked in today');
-      const late = timeIn() > co.workStart;
-      const [r] = await this.db.insert(attendance).values({ companyId: c.companyId, employeeId: empId, date, status: 'PRESENT', clockIn: now, clockInLoc: loc, late })
-        .onConflictDoUpdate({ target: [attendance.employeeId, attendance.date], set: { status: 'PRESENT', clockIn: now, clockInLoc: loc, late } }).returning();
+      // Late against today's shift start if rostered, otherwise the company's work start time
+      const [shift] = await this.db.select({ start: shiftTemplates.startTime }).from(shifts).innerJoin(shiftTemplates, eq(shiftTemplates.id, shifts.templateId))
+        .where(and(eq(shifts.employeeId, empId), eq(shifts.date, date)));
+      const mins = lateMinutes(timeIn(), shift?.start ?? co.workStart, co.lateGraceMinutes);
+      const set = { status: 'PRESENT' as const, clockIn: now, clockInLoc: loc, late: mins > 0, lateMinutes: mins, lateWaived: false };
+      const [r] = await this.db.insert(attendance).values({ companyId: c.companyId, employeeId: empId, date, ...set })
+        .onConflictDoUpdate({ target: [attendance.employeeId, attendance.date], set }).returning();
       return r;
     }
     if (!existing?.clockIn) throw new BadRequestException('Clock in first');

@@ -36,3 +36,19 @@ export function distanceMeters(a: { lat: number; lng: number }, b: { lat: number
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
+
+const toMin = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+
+/**
+ * Minutes late for a clock-in at `clock` (HH:MM) against a start time (HH:MM).
+ * Lateness within `grace` minutes counts as on time (0). Clocking in more than
+ * 12 hours "late" is treated as early for an overnight shift (0).
+ */
+export function lateMinutes(clock: string, start: string, grace: number) {
+  const diff = (toMin(clock) - toMin(start) + 1440) % 1440;
+  if (diff > 720) return 0;
+  return diff > Math.max(0, grace) ? diff : 0;
+}
+
+/** Round minutes up to a block (e.g. 15 → 1..15 becomes 15). */
+export const roundUpMinutes = (min: number, block: number) => (block > 1 && min > 0 ? Math.ceil(min / block) * block : Math.max(0, Math.round(min)));

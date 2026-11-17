@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { clock } from './clock';
-import { fmtTime } from './format';
+import { fmtMins, fmtTime } from './format';
 import { useAction } from './hooks';
 import { C } from './theme';
 import { Btn, Row } from './ui';
@@ -22,7 +22,7 @@ export function ClockCard({ today, shift }: { today: any; shift?: any }) {
         {shift && <View style={{ backgroundColor: shift.color, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{shift.name}</Text><Text style={{ color: '#fff', fontSize: 11 }}>{shift.start}–{shift.end}</Text></View>}
       </Row>
       <Text style={{ color: '#cfe7e0' }}>
-        {inAt ? `In ${fmtTime(inAt)}${outAt ? ` · Out ${fmtTime(outAt)}` : ''} · ${worked.toFixed(1)} h${today.late ? ' · late' : ''}` : 'You have not clocked in today.'}
+        {inAt ? `In ${fmtTime(inAt)}${outAt ? ` · Out ${fmtTime(outAt)}` : ''} · ${worked.toFixed(1)} h${today.lateMinutes ? ` · ${fmtMins(today.lateMinutes)} late` : today.late ? ' · late' : ''}` : 'You have not clocked in today.'}
       </Text>
       {!outAt && <Btn kind="light" icon="fingerprint" title={act.busy ? 'Getting location…' : inAt ? 'Clock out' : 'Clock in'} disabled={act.busy} onPress={() => act.run(inAt ? 'out' : 'in')} />}
     </View>

@@ -5,7 +5,8 @@
  *   hourly rate = daily ÷ hours per day
  *   overtime    = hourly × OT hours × OT multiplier
  *   unpaid      = daily × unpaid days (capped at basic)
- *   gross       = basic + allowances + overtime + bonus + other earnings − unpaid
+ *   late        = hourly × late minutes ÷ 60   (only when the company enables late deductions)
+ *   gross       = basic + allowances + overtime + bonus + other earnings − unpaid − late
  *   statutory   = min(gross, wage cap) × rate%   (employee and employer parts)
  *   net         = gross − (statutory employee + PCB + recurring + one-off deductions) + reimbursements
  *
@@ -19,17 +20,18 @@ export interface EngineEmployee {
   icNo?: string | null; epfNo?: string | null; taxNo?: string | null; bankName?: string | null; bankAccount?: string | null; joinDate?: string | null;
   basicSalary: number; monthlyTax: number; applyStatutory: boolean; allowances: Line[]; deductions: Line[];
 }
-export interface EngineSettings { workingDays: number; hoursPerDay: number; otRate: number }
+export interface EngineSettings { workingDays: number; hoursPerDay: number; otRate: number; lateDeduction?: boolean }
 export interface EngineScheme { name: string; employeeRate: number; employerRate: number; wageCap: number }
-export interface EngineAttendance { otHours: number; unpaidDays: number }
+export interface EngineAttendance { otHours: number; unpaidDays: number; lateMinutes?: number }
 export interface Adjustments {
-  bonus?: number; otherEarnings?: number; otHours?: number | null; unpaidDays?: number | null; tax?: number | null; otherDeduction?: number; note?: string;
+  bonus?: number; otherEarnings?: number; otHours?: number | null; unpaidDays?: number | null; lateMinutes?: number | null; tax?: number | null; otherDeduction?: number; note?: string;
 }
 
 export interface PayslipData {
   employee: { id: string; code: string; name: string; designation: string; department: string; icNo: string; epfNo: string; taxNo: string; bankName: string; bankAccount: string; joinDate: string };
   basic: number; allowances: Line[]; allowanceTotal: number;
   otHours: number; otPay: number; bonus: number; otherEarnings: number; unpaidDays: number; unpaidDeduction: number;
+  lateMinutes: number; lateDeduction: number;
   gross: number;
   statutory: { name: string; employee: number; employer: number }[]; statutoryEmployee: number; statutoryEmployer: number;
   tax: number; deductions: Line[]; deductionTotal: number; otherDeduction: number; totalDeductions: number;
@@ -56,9 +58,11 @@ export function computePayslip(e: EngineEmployee, s: EngineSettings, schemes: En
   const unpaidDays = r2(Math.max(0, adj.unpaidDays ?? att.unpaidDays ?? 0));
   const otPay = r2(hourly * otHours * otr);
   const unpaidDeduction = r2(Math.min(basic, daily * unpaidDays));
+  const lateMinutes = s.lateDeduction ? Math.max(0, Math.round(adj.lateMinutes ?? att.lateMinutes ?? 0)) : 0;
+  const lateDeduction = r2(Math.min(basic - unpaidDeduction, (hourly * lateMinutes) / 60));
   const bonus = r2(Math.max(0, adj.bonus ?? 0));
   const otherEarnings = r2(Math.max(0, adj.otherEarnings ?? 0));
-  const gross = r2(basic + allowanceTotal + otPay + bonus + otherEarnings - unpaidDeduction);
+  const gross = r2(basic + allowanceTotal + otPay + bonus + otherEarnings - unpaidDeduction - lateDeduction);
 
   const statutory = e.applyStatutory
     ? schemes.map((c) => {
@@ -81,7 +85,7 @@ export function computePayslip(e: EngineEmployee, s: EngineSettings, schemes: En
       id: e.id, code: e.code, name: e.name, designation: e.designation || '', department: e.department || '', icNo: e.icNo || '',
       epfNo: e.epfNo || '', taxNo: e.taxNo || '', bankName: e.bankName || '', bankAccount: e.bankAccount || '', joinDate: e.joinDate || '',
     },
-    basic, allowances, allowanceTotal, otHours, otPay, bonus, otherEarnings, unpaidDays, unpaidDeduction, gross,
+    basic, allowances, allowanceTotal, otHours, otPay, bonus, otherEarnings, unpaidDays, unpaidDeduction, lateMinutes, lateDeduction, gross,
     statutory, statutoryEmployee, statutoryEmployer, tax, deductions, deductionTotal, otherDeduction, totalDeductions,
     reimbursements: reimb, reimbursementTotal,
     net: r2(gross - totalDeductions + reimbursementTotal),
