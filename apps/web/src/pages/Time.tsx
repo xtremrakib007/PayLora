@@ -6,7 +6,7 @@ import { useAction, useGet } from '../lib/hooks';
 import { isAdmin, isManager } from '../lib/modules';
 import { Badge, Empty, Field, Modal, Seg, Spinner, useConfirm, Who } from '../components/ui';
 import { Icon } from '../components/Icon';
-import { clockWithLocation } from './Home';
+import { ClockButton, SelfieThumbs } from '../components/Selfie';
 
 /* ───────── Attendance ───────── */
 const MARKS: [string, string, string][] = [['PRESENT', 'P', 'var(--ok)'], ['ABSENT', 'A', 'var(--bad)'], ['HALF_DAY', 'H', 'var(--warn)'], ['LEAVE', 'L', 'var(--info)']];
@@ -26,7 +26,6 @@ export function Attendance() {
 function MyAttendance() {
   const [period, setPeriod] = useState(thisMonth());
   const q = useGet<any>(`/me/attendance?period=${period}`);
-  const clock = useAction((a: 'in' | 'out') => clockWithLocation(a), { ok: 'Saved', invalidate: ['/me/attendance', '/home'] });
   const t = q.data?.today;
   return (
     <>
@@ -35,7 +34,7 @@ function MyAttendance() {
           <div><div className="small" style={{ color: '#a9d3c7', fontWeight: 700 }}>TODAY · {fmtDate(today())}</div>
             <div style={{ fontSize: 26, fontWeight: 800 }}>{t?.clockIn ? (t.clockOut ? 'Done for today' : 'Clocked in') : 'Not clocked in'}</div>
             <div style={{ color: '#cfe7e0' }}>{t?.clockIn ? `In ${fmtTime(t.clockIn)}${t.clockOut ? ` · Out ${fmtTime(t.clockOut)}` : ''}${t.lateMinutes ? ` · ${fmtMins(t.lateMinutes)} late` : t.late ? ' · late' : ''}${t.earlyMinutes ? ` · left ${fmtMins(t.earlyMinutes)} early` : ''}${t.clockInLoc?.distance != null ? ` · ${t.clockInLoc.distance} m from office` : ''}` : 'Your location is attached when your browser allows it.'}</div></div>
-          {!t?.clockOut && <button className="btn" disabled={clock.busy} onClick={() => clock.run(t?.clockIn ? 'out' : 'in')}>{t?.clockIn ? 'Clock out' : 'Clock in'}</button>}
+          {!t?.clockOut && <ClockButton action={t?.clockIn ? 'out' : 'in'} />}
         </div>
       </div>
       <div className="card">
@@ -46,7 +45,7 @@ function MyAttendance() {
         {!q.data ? <Spinner /> : !q.data.records.length ? <Empty title="No records this month" /> : (
           <div className="tw"><table className="t"><thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th className="n">Hours</th><th className="n">OT</th></tr></thead>
             <tbody>{q.data.records.map((r: any) => <tr key={r.id}><td>{fmtDate(r.date)}</td><td><Badge s={r.status} />{(r.late || r.lateMinutes > 0) && <span className="badge warn" style={{ marginLeft: 4 }}>{r.lateMinutes ? `${fmtMins(r.lateMinutes)} late` : 'Late'}{r.lateWaived ? ' · excused' : ''}</span>}{r.earlyMinutes > 0 && <span className="badge warn" style={{ marginLeft: 4 }}>left {fmtMins(r.earlyMinutes)} early{r.earlyWaived ? ' · excused' : ''}</span>}</td>
-              <td>{fmtTime(r.clockIn)}</td><td>{fmtTime(r.clockOut)}</td><td className="n">{r.clockIn && r.clockOut ? ((new Date(r.clockOut).getTime() - new Date(r.clockIn).getTime()) / 3600000).toFixed(1) : '—'}</td><td className="n">{Number(r.otHours) || '—'}</td></tr>)}</tbody></table></div>
+              <td style={{ whiteSpace: 'nowrap' }}>{fmtTime(r.clockIn)}<SelfieThumbs inId={r.clockInPhotoId} outId={r.clockOutPhotoId} name="You" /></td><td>{fmtTime(r.clockOut)}</td><td className="n">{r.clockIn && r.clockOut ? ((new Date(r.clockOut).getTime() - new Date(r.clockIn).getTime()) / 3600000).toFixed(1) : '—'}</td><td className="n">{Number(r.otHours) || '—'}</td></tr>)}</tbody></table></div>
         )}
       </div>
     </>
@@ -76,7 +75,7 @@ function DayRegister() {
               <tr key={r.employee.id}>
                 <td><Who name={r.employee.name} sub={r.leave ? `On ${r.leave}` : r.employee.designation || r.employee.code} id={r.employee.id} /></td>
                 <td>{r.shift ? <span className="chip" style={{ background: r.shift.color }}>{r.shift.name} {r.shift.start}–{r.shift.end}</span> : <span className="faint">—</span>}</td>
-                <td className="small">{r.record?.clockIn ? `${fmtTime(r.record.clockIn)} – ${fmtTime(r.record.clockOut)}` : '—'}</td>
+                <td className="small" style={{ whiteSpace: 'nowrap' }}>{r.record?.clockIn ? `${fmtTime(r.record.clockIn)} – ${fmtTime(r.record.clockOut)}` : '—'}<SelfieThumbs inId={r.record?.clockInPhotoId} outId={r.record?.clockOutPhotoId} name={r.employee.name} /></td>
                 <td><div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>{MARKS.map(([v, l, c]) => (
                   <button key={v} className="btn sm" title={titleCase(v)} style={cur === v ? { background: c, borderColor: c, color: '#fff', width: 34 } : { width: 34 }} onClick={() => set(r.employee.id, cur === v ? null : v)}>{l}</button>))}</div></td>
                 <td className="n"><MinutesCell mins={r.record?.lateMinutes} waived={r.record?.lateWaived} what="late" onSave={(lateMinutes, lateWaived) => mark.run([{ employeeId: r.employee.id, status: cur ?? 'PRESENT', lateMinutes, lateWaived }])} /></td>

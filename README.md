@@ -14,7 +14,7 @@ apps/
 | Area | Apps |
 |---|---|
 | People | **Profiles** (directory + employee records), **Onboarding** (checklists from templates), **Performance** (review cycles, self/manager reviews, goals), **Training** (courses, assignments, progress) |
-| Time | **Attendance** (GPS clock-in with office geofence, late-arrival and early-leave tracking with pay deduction, daily register, monthly summary), **Leave** (requests, approvals, balances, holidays), **Timesheets** (hours by project, approvals), **Shifts** (weekly roster, shift types) |
+| Time | **Attendance** (GPS clock-in with office geofence, optional selfie at clock-in/out, late-arrival and early-leave tracking with pay deduction, daily register, monthly summary), **Leave** (requests, approvals, balances, holidays), **Timesheets** (hours by project, approvals), **Shifts** (weekly roster, shift types) |
 | Money | **Payroll** (monthly runs, adjustments, finalize/paid, bank CSV, PDF payslips), **Payslips** (self-service), **Claims** (approved claims are paid through the next payroll run) |
 | Hiring | **Recruitment** (candidate pipeline, hire → employee + onboarding), **Job Board** (public careers page per company: `/careers/<slug>`) |
 | Engagement | **Feed** (posts, likes, comments, announcements), **Surveys** (anonymous pulse surveys with results), **Services** (HR helpdesk tickets) |
@@ -22,7 +22,16 @@ apps/
 | Insights | **Reporting** (headcount, turnover, payroll cost, leave, claims, attendance; CSV export) |
 | Platform | **Notifications** (in-app + Expo push), **Billing** (plans, Billplz checkout), **Super-admin** (all tenants, plans, revenue) |
 
-### Roles
+### Roles and dashboards
+Everyone signs in on the same screen; the dashboard and menus follow the account's role (web and Android):
+
+| Role | Dashboard |
+|---|---|
+| **Owner** | Business view: active employees vs plan, monthly basic payroll, this month's payroll cost, payroll cost trend (last 6 runs), approvals, company-wide attendance board, birthdays/anniversaries/joiners/leavers |
+| **HR** | Operations: in / late / on leave / approvals today, live attendance board with selfies, one-tap approve/reject for leave and claims, people events, HR queues (payroll status, onboarding, helpdesk, new applicants) |
+| **Manager** | Team: who in their team is in, late, on leave or not in yet, their team's approvals, overdue team tasks, plus their own clock-in, tasks and meetings |
+| **Employee** | Self-service: clock in/out, shift, tasks, meetings, leave, latest payslip, announcements |
+
 - **Owner / HR** – everything in their company (Owner also manages billing and owners).
 - **Manager** – approves leave, claims and timesheets of their **direct reports**; plans shifts; assigns tasks and goals.
 - **Employee** – self-service: clock in, payslips, leave, claims, tasks, meetings, surveys, helpdesk.
@@ -42,6 +51,7 @@ Each company can also switch individual apps off in **Settings → Apps**.
 - The auth guard re-reads the membership, company and subscription **on every request**, so role changes, deactivation, suspension and plan expiry apply immediately.
 - Passwords are bcrypt-hashed; JWTs are signed with `JWT_SECRET`; login and invite endpoints are rate-limited.
 - Billplz callbacks are verified with the X-Signature HMAC; payment activation is idempotent.
+- Attendance selfies (optional per company) are stored as small JPEGs in Postgres, validated as real images, visible only to the employee, their manager and HR, and auto-deleted after a retention period (default 90 days).
 - Survey responses store only a salted hash of the respondent (anonymous surveys never store names).
 
 ## Payroll rules

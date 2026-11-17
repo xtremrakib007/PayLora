@@ -62,7 +62,7 @@ export class AuthService {
     const employee = c.employeeId ? await this.db.query.employees.findFirst({ where: eq(employees.id, c.employeeId), columns: { id: true, code: true, name: true, designation: true } }) : null;
     return {
       user: { id: c.userId, name: c.name, email: c.email, platformRole: c.platformRole },
-      company: company && { id: company.id, name: company.name, slug: company.slug, currency: company.currency, status: company.status },
+      company: company && { id: company.id, name: company.name, slug: company.slug, currency: company.currency, status: company.status, requireSelfie: company.requireSelfie },
       role: c.role ?? null, employee, plan: c.plan ?? null, modules: c.modules ?? [], memberships: list,
     };
   }

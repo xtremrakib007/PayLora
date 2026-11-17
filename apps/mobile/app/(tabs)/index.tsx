@@ -3,14 +3,18 @@ import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/auth';
 import { ClockCard } from '../../src/ClockCard';
+import { AdminStats, ApprovalsCard, PeopleEvents, TeamToday } from '../../src/dashboards';
 import { fmtDay, fmtShort, fmtTime, monthLabel, money } from '../../src/format';
 import { useGet } from '../../src/hooks';
 import { APPS } from '../../src/modules';
 import { C } from '../../src/theme';
 import { Badge, Icon, ListItem, Loading, Row, Screen, Section, T } from '../../src/ui';
 
+const ROLE: Record<string, string> = { OWNER: 'OWNER DASHBOARD', HR: 'HR DASHBOARD', MANAGER: 'MANAGER DASHBOARD', EMPLOYEE: 'MY DASHBOARD' };
+
 export default function Home() {
   const { me, has } = useAuth();
+  const admin = me?.role === 'OWNER' || me?.role === 'HR';
   const q = useGet<any>('/home');
   const h = q.data;
   const apps = APPS.filter((a) => has(a.module) && (!a.roles || (me?.role && a.roles.includes(me.role))));
@@ -21,6 +25,7 @@ export default function Home() {
         <Row>
           <View style={{ flex: 1 }}>
             <T muted small>{me?.company?.name}</T>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: C.brand, letterSpacing: 0.6 }}>{ROLE[me?.role || 'EMPLOYEE']}</Text>
             <Text style={{ fontSize: 24, fontWeight: '800', color: C.ink }}>Good {hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening'}, {me?.user.name.split(' ')[0]}</Text>
           </View>
           <Pressable onPress={() => router.push('/notifications')} style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
@@ -30,6 +35,8 @@ export default function Home() {
         </Row>
 
         {!h ? <Loading /> : <>
+          {admin && h.team && <AdminStats h={h} />}
+          {admin && h.team && <ApprovalsCard team={h.team} />}
           {h.attendanceToday !== undefined && h.employee && <ClockCard today={h.attendanceToday} shift={h.shiftToday} />}
           {!me?.employee && <View style={{ backgroundColor: C.infoL, padding: 12, borderRadius: 12 }}><T style={{ color: C.info }}>Your account isn't linked to an employee profile yet — ask HR to link it to use clock-in, payslips and leave.</T></View>}
 
@@ -42,16 +49,10 @@ export default function Home() {
             ))}
           </View>
 
-          {h.team && (
-            <Pressable onPress={() => router.push('/approvals')}>
-              <Section title="Team today">
-                <Row style={{ justifyContent: 'space-between' }}>
-                  {[['Present', (h.team.attendanceToday.PRESENT || 0) + (h.team.attendanceToday.HALF_DAY || 0), C.ok], ['On leave', h.team.onLeaveToday.length, C.info], ['To approve', h.team.pending.leave + h.team.pending.claims + h.team.pending.timesheets, C.warn]].map(([l, n, c]) => (
-                    <View key={l as string} style={{ alignItems: 'center', flex: 1 }}><Text style={{ fontSize: 24, fontWeight: '800', color: c as string }}>{n as number}</Text><T muted small>{l as string}</T></View>))}
-                </Row>
-              </Section>
-            </Pressable>
-          )}
+          {!admin && h.team && <TeamToday team={h.team} title="My team today" />}
+          {!admin && h.team && <ApprovalsCard team={h.team} />}
+          {admin && h.team && <TeamToday team={h.team} title="Today across the company" limit={10} />}
+          {admin && h.hr && <PeopleEvents hr={h.hr} />}
           {h.myTasks && h.myTasks.length > 0 && <Section title="My tasks" action={<T small style={{ color: C.brand, fontWeight: '700' }} >{h.myTasks.length} open</T>}>
             {h.myTasks.map((t: any) => <ListItem key={t.id} title={t.title} sub={t.dueDate ? `Due ${fmtShort(t.dueDate)}` : undefined} right={<Badge s={t.priority} />} onPress={() => router.push('/(tabs)/tasks')} />)}
           </Section>}

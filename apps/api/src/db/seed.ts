@@ -73,6 +73,11 @@ async function demo(db: DB) {
     bankName: banks[i % 4], bankAccount: String(5140000000 + i * 7654321), epfNo: String(10000000 + i * 345678),
   }))).returning();
   const E = emps;
+  // birthdays / work anniversary in the next two weeks so the HR dashboard has something to show
+  const md = (k: number) => addDays(todayIn(), k).slice(5);
+  await db.update(s.employees).set({ dob: `1992-${md(3)}` }).where(eq(s.employees.id, E[2].id));
+  await db.update(s.employees).set({ dob: `1996-${md(10)}` }).where(eq(s.employees.id, E[6].id));
+  await db.update(s.employees).set({ joinDate: `${Number(yr) - 3}-${md(5)}` }).where(eq(s.employees.id, E[8].id));
   // reporting lines
   for (const i of [4, 5]) await db.update(s.employees).set({ managerId: E[3].id }).where(eq(s.employees.id, E[i].id));
   for (const i of [6]) await db.update(s.employees).set({ managerId: E[7].id }).where(eq(s.employees.id, E[i].id));

@@ -6,7 +6,7 @@ import type { Role } from './modules';
 
 export type Me = {
   user: { id: string; name: string; email: string; platformRole: 'USER' | 'SUPER_ADMIN' };
-  company: { id: string; name: string; slug: string; currency: string; status: string } | null;
+  company: { id: string; name: string; slug: string; currency: string; status: string; requireSelfie?: boolean } | null;
   role: Role | null;
   employee: { id: string; code: string; name: string; designation: string | null } | null;
   plan: { code: string; maxEmployees: number; modules: string[] } | null;

@@ -8,7 +8,7 @@
  */
 import { sql } from 'drizzle-orm';
 import {
-  boolean, date, doublePrecision, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, text,
+  boolean, customType, date, doublePrecision, index, integer, jsonb, numeric, pgEnum, pgTable, primaryKey, text,
   timestamp, uniqueIndex, uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -16,6 +16,7 @@ const id = () => uuid('id').primaryKey().defaultRandom();
 const companyId = () => uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' });
 const money = (name: string) => numeric(name, { precision: 12, scale: 2, mode: 'number' });
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
 const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date());
 
 // ───────────── enums ─────────────
@@ -75,6 +76,8 @@ export const companies = pgTable('companies', {
   officeLat: doublePrecision('office_lat'),
   officeLng: doublePrecision('office_lng'),
   geofenceMeters: integer('geofence_meters').notNull().default(0), // 0 = no geofence
+  requireSelfie: boolean('require_selfie').notNull().default(false), // staff must take a selfie to clock in/out
+  selfieRetentionDays: integer('selfie_retention_days').notNull().default(90), // auto-delete selfies after N days (0 = keep)
   disabledModules: text('disabled_modules').array().notNull().default(sql`'{}'::text[]`),
   status: companyStatus('status').notNull().default('ACTIVE'),
   createdAt: createdAt(),
@@ -226,8 +229,22 @@ export const attendance = pgTable('attendance', {
   lateWaived: boolean('late_waived').notNull().default(false), // HR excused this lateness
   earlyMinutes: integer('early_minutes').notNull().default(0), // minutes left before shift/work end
   earlyWaived: boolean('early_waived').notNull().default(false),
+  clockInPhotoId: uuid('clock_in_photo_id'),
+  clockOutPhotoId: uuid('clock_out_photo_id'),
   otHours: numeric('ot_hours', { precision: 5, scale: 2, mode: 'number' }).notNull().default(0),
 }, (t) => [uniqueIndex('attendance_emp_date').on(t.employeeId, t.date), index('attendance_company_date').on(t.companyId, t.date)]);
+
+/** Clock-in/out selfies, kept in Postgres (small JPEGs) so no extra file storage is needed. */
+export const attendancePhotos = pgTable('attendance_photos', {
+  id: id(),
+  companyId: companyId(),
+  employeeId: uuid('employee_id').notNull().references(() => employees.id, { onDelete: 'cascade' }),
+  attendanceId: uuid('attendance_id').notNull().references(() => attendance.id, { onDelete: 'cascade' }),
+  kind: text('kind').notNull(), // 'in' | 'out'
+  mime: text('mime').notNull(),
+  data: bytea('data').notNull(),
+  createdAt: createdAt(),
+}, (t) => [index('attendance_photos_company_time').on(t.companyId, t.createdAt)]);
 
 export const leaveTypes = pgTable('leave_types', {
   id: id(),

@@ -12,6 +12,7 @@ async function bootstrap() {
   }
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: true });
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  app.useBodyParser('json', { limit: '3mb' }); // clock-in selfies are sent as data URLs
   app.useBodyParser('urlencoded', { extended: true }); // Billplz callbacks are form-encoded
   const origins = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',').map((s) => s.trim());
   app.enableCors({ origin: (o, cb) => cb(null, !o || origins.includes('*') || origins.includes(o)), credentials: false });

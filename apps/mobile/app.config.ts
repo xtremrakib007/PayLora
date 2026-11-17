@@ -18,7 +18,7 @@ const config: ExpoConfig = {
     package: process.env.ANDROID_PACKAGE || 'com.paylora.app',
     versionCode: 1,
     adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#0d6b5c' },
-    permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'POST_NOTIFICATIONS'],
+    permissions: ['ACCESS_FINE_LOCATION', 'ACCESS_COARSE_LOCATION', 'POST_NOTIFICATIONS', 'CAMERA'],
   },
   ios: { bundleIdentifier: 'com.paylora.app', supportsTablet: false },
   plugins: [
@@ -27,6 +27,7 @@ const config: ExpoConfig = {
     'expo-secure-store',
     ['expo-location', { locationWhenInUsePermission: 'PayLora uses your location to verify clock-in at your workplace.' }],
     ['expo-notifications', { color: '#0d6b5c' }],
+    ['expo-image-picker', { cameraPermission: 'PayLora uses the camera for your clock-in selfie.', microphonePermission: false }],
   ],
   experiments: { typedRoutes: false },
   extra: {

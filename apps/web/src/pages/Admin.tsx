@@ -95,7 +95,7 @@ export function Settings() {
   const saveCo = useAction(() => patch('/company', {
     name: co.name, regNo: co.regNo, address: co.address, email: co.email, phone: co.phone, currency: co.currency, workingDays: Number(co.workingDays), hoursPerDay: Number(co.hoursPerDay), otRate: Number(co.otRate),
     restDays: co.restDays, workStart: co.workStart, lateDeduction: !!co.lateDeduction, earlyLeaveDeduction: !!co.earlyLeaveDeduction, workEnd: co.workEnd, lateGraceMinutes: Number(co.lateGraceMinutes) || 0, lateRoundMinutes: Number(co.lateRoundMinutes) || 1, officeLat: co.officeLat === '' || co.officeLat == null ? null : Number(co.officeLat), officeLng: co.officeLng === '' || co.officeLng == null ? null : Number(co.officeLng),
-    geofenceMeters: Number(co.geofenceMeters) || 0, disabledModules: co.disabledModules,
+    geofenceMeters: Number(co.geofenceMeters) || 0, requireSelfie: !!co.requireSelfie, selfieRetentionDays: Number(co.selfieRetentionDays) || 0, disabledModules: co.disabledModules,
   }), { ok: 'Settings saved', invalidate: ['/company', '/home'], onDone: () => refresh() });
   const saveStat = useAction(() => put('/company/statutory', stat.filter((s) => s.name).map((s) => ({ name: s.name, employeeRate: Number(s.employeeRate), employerRate: Number(s.employerRate), wageCap: Number(s.wageCap) || 0 }))), { ok: 'Contributions saved', invalidate: ['/company'] });
   const [lt, setLt] = useState({ name: '', daysPerYear: 0, paid: true });
@@ -131,6 +131,10 @@ export function Settings() {
         <Field label="Grace period in minutes (applies to both)"><input className="inp num" type="number" min="0" {...bind('lateGraceMinutes')} /></Field>
         <Field label="Round each late arrival / early leave up to"><select className="inp" {...bind('lateRoundMinutes')}>{[1, 5, 10, 15, 30, 60].map((n) => <option key={n} value={n}>{n === 1 ? 'Exact minutes' : `${n} minutes`}</option>)}</select></Field>
         <div className="full small muted">Lateness is measured from the rostered shift start (or work start above); early leave from the shift end (or work end above), when staff clock out. Beyond the grace period every minute counts. HR can edit or excuse minutes in Attendance → Daily register, or per payslip in Payroll → Adjust.</div>
+        <div className="sect">Selfie attendance</div>
+        <label className="full row" style={{ fontWeight: 600 }}><input type="checkbox" checked={!!co.requireSelfie} onChange={(e) => setCo({ ...co, requireSelfie: e.target.checked })} /> Require a selfie to clock in and clock out</label>
+        <Field label="Delete selfies after (days, 0 = keep forever)"><input className="inp num" type="number" min="0" {...bind('selfieRetentionDays')} /></Field>
+        <div className="field small muted" style={{ justifyContent: 'flex-end' }}>Photos are visible only to the employee, their manager and HR. Tell staff why you collect them (PDPA) and keep them only as long as needed.</div>
         <div className="sect">Clock-in geofence</div>
         <Field label="Office latitude"><input className="inp num" {...bind('officeLat')} /></Field><Field label="Office longitude"><input className="inp num" {...bind('officeLng')} /></Field>
         <Field label="Allowed radius in metres (0 = off)"><input className="inp num" type="number" {...bind('geofenceMeters')} /></Field>

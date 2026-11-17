@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import { Alert } from 'react-native';
+import { useAuth } from './auth';
 import { clock } from './clock';
+import { takeSelfie } from './selfie';
 import { fmtMins, fmtTime } from './format';
 import { useAction } from './hooks';
 import { C } from './theme';
@@ -9,7 +12,16 @@ import { Btn, Row } from './ui';
 export function ClockCard({ today, shift }: { today: any; shift?: any }) {
   const [now, setNow] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 15_000); return () => clearInterval(t); }, []);
-  const act = useAction((a: 'in' | 'out') => clock(a), { invalidate: ['/home', '/me/attendance'] });
+  const { me } = useAuth();
+  const act = useAction((a: { action: 'in' | 'out'; photo?: string | null }) => clock(a.action, a.photo), { invalidate: ['/home', '/me/attendance'] });
+  const press = async (action: 'in' | 'out') => {
+    let photo: string | null = null;
+    if (me?.company?.requireSelfie) {
+      try { photo = await takeSelfie(); } catch (e: any) { Alert.alert('Camera', e.message); return; }
+      if (!photo) return; // cancelled
+    }
+    await act.run({ action, photo }).catch(() => undefined);
+  };
   const inAt = today?.clockIn, outAt = today?.clockOut;
   const worked = inAt ? ((outAt ? new Date(outAt) : now).getTime() - new Date(inAt).getTime()) / 3600000 : 0;
   return (
@@ -24,7 +36,7 @@ export function ClockCard({ today, shift }: { today: any; shift?: any }) {
       <Text style={{ color: '#cfe7e0' }}>
         {inAt ? `In ${fmtTime(inAt)}${outAt ? ` · Out ${fmtTime(outAt)}` : ''} · ${worked.toFixed(1)} h${today.lateMinutes ? ` · ${fmtMins(today.lateMinutes)} late` : today.late ? ' · late' : ''}${today.earlyMinutes ? ` · left ${fmtMins(today.earlyMinutes)} early` : ''}` : 'You have not clocked in today.'}
       </Text>
-      {!outAt && <Btn kind="light" icon="fingerprint" title={act.busy ? 'Getting location…' : inAt ? 'Clock out' : 'Clock in'} disabled={act.busy} onPress={() => act.run(inAt ? 'out' : 'in')} />}
+      {!outAt && <Btn kind="light" icon="fingerprint" title={act.busy ? 'Saving…' : `${inAt ? 'Clock out' : 'Clock in'}${me?.company?.requireSelfie ? ' with selfie' : ''}`} disabled={act.busy} onPress={() => { void press(inAt ? 'out' : 'in'); }} />}
     </View>
   );
 }

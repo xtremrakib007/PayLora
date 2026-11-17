@@ -88,7 +88,7 @@ textarea.inp { resize: vertical; }
 .list-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f1ee; } .list-row:last-child { border-bottom: 0; }
 .bar { height: 8px; background: #edede8; border-radius: 6px; overflow: hidden; } .bar i { display: block; height: 100%; background: var(--brand); border-radius: 6px; }
 .modal-bg { position: fixed; inset: 0; background: rgba(15, 25, 22, .45); z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding: 5vh 12px; overflow-y: auto; }
-.modal { background: #fff; border-radius: 16px; width: 100%; max-width: 560px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.modal { color: var(--ink); text-align: left; background: #fff; border-radius: 16px; width: 100%; max-width: 560px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
 .modal.wide { max-width: 860px; } .modal h3 { font-size: 18px; margin-bottom: 14px; }
 .mfoot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
 .toasts { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: center; }

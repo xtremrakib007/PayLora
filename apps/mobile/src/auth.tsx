@@ -7,7 +7,7 @@ import { registerForPush, unregisterPush } from './push';
 
 export type Me = {
   user: { id: string; name: string; email: string; platformRole: string };
-  company: { id: string; name: string; slug: string; currency: string } | null;
+  company: { id: string; name: string; slug: string; currency: string; requireSelfie?: boolean } | null;
   role: Role | null;
   employee: { id: string; code: string; name: string; designation: string | null } | null;
   plan: { code: string } | null;

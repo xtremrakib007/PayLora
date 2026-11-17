@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ReactNode, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TextInputProps, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API_URL, tokenStore } from './api';
 import { initials, titleCase } from './format';
 import type { IconName } from './modules';
 import { C, statusTone, TONE } from './theme';
@@ -126,4 +127,9 @@ export function DateField({ label, value, onChange, min }: { label: string; valu
       </Modal>
     </View>
   );
+}
+
+/** Protected API image (selfie) loaded with the bearer token. */
+export function AuthImage({ path, size = 34, radius = 9 }: { path: string; size?: number; radius?: number }) {
+  return <Image source={{ uri: `${API_URL}/api${path}`, headers: { authorization: `Bearer ${tokenStore.get()}` } }} style={{ width: size, height: size, borderRadius: radius, backgroundColor: '#eee' }} />;
 }

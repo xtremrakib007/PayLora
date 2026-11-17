@@ -16,7 +16,7 @@ const CompanyDto = z.object({
   workEnd: z.string().regex(/^\d{2}:\d{2}$/), earlyLeaveDeduction: z.boolean(),
   lateDeduction: z.boolean(), lateGraceMinutes: z.coerce.number().int().min(0).max(240), lateRoundMinutes: z.coerce.number().int().refine((n) => [1, 5, 10, 15, 30, 60].includes(n), 'must be 1, 5, 10, 15, 30 or 60'),
   officeLat: z.coerce.number().min(-90).max(90).nullish(), officeLng: z.coerce.number().min(-180).max(180).nullish(),
-  geofenceMeters: z.coerce.number().int().min(0).max(50000), disabledModules: z.array(z.enum(MODULES)),
+  geofenceMeters: z.coerce.number().int().min(0).max(50000), requireSelfie: z.boolean(), selfieRetentionDays: z.coerce.number().int().min(0).max(3650), disabledModules: z.array(z.enum(MODULES)),
 }).partial();
 const StatDto = z.array(z.object({ name: z.string().trim().min(1).max(40), employeeRate: z.coerce.number().min(0).max(100), employerRate: z.coerce.number().min(0).max(100), wageCap: z.coerce.number().min(0) })).max(20);
 const LeaveTypeDto = z.object({ name: z.string().trim().min(1).max(60), daysPerYear: z.coerce.number().int().min(0).max(366), paid: z.boolean(), active: z.boolean().default(true) });
