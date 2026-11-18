@@ -70,7 +70,7 @@ Each company can also switch individual apps off in **Settings → Apps**.
 
 ## Run it locally (works in Termux)
 
-Requirements: Node 20+ and PostgreSQL 14+.
+Requirements: Node 24 (LTS) and PostgreSQL 14+.
 
 ```bash
 # Termux
